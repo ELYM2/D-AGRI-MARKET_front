@@ -1,0 +1,197 @@
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import Link from "next/link"
+import { Leaf, Eye, EyeOff, ArrowLeft } from "lucide-react"
+import { Button } from "@/components/ui/button"
+
+export default function SignupPage() {
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    agreeTerms: false,
+  })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }))
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const newErrors: Record<string, string> = {}
+
+    if (!formData.firstName) newErrors.firstName = "Le prénom est requis"
+    if (!formData.lastName) newErrors.lastName = "Le nom est requis"
+    if (!formData.email) newErrors.email = "L'email est requis"
+    if (formData.password.length < 8) newErrors.password = "Au moins 8 caractères"
+    if (formData.password !== formData.confirmPassword)
+      newErrors.confirmPassword = "Les mots de passe ne correspondent pas"
+    if (!formData.agreeTerms) newErrors.agreeTerms = "Vous devez accepter les conditions"
+
+    setErrors(newErrors)
+
+    if (Object.keys(newErrors).length === 0) {
+      console.log("[v0] Signup attempt:", formData)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        {/* Back Button */}
+        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition mb-8">
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm">Retour à l'accueil</span>
+        </Link>
+
+        {/* Card */}
+        <div className="bg-card p-8 rounded-xl border border-border space-y-6">
+          {/* Logo & Title */}
+          <div className="space-y-2 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center">
+                <Leaf className="w-6 h-6 text-primary-foreground" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">Créer un compte</h1>
+            <p className="text-sm text-muted-foreground">Rejoignez la communauté LocalMarket</p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Prénom</label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  placeholder="Jean"
+                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                />
+                {errors.firstName && <p className="text-xs text-destructive mt-1">{errors.firstName}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Nom</label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  placeholder="Dupont"
+                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                />
+                {errors.lastName && <p className="text-xs text-destructive mt-1">{errors.lastName}</p>}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="vous@exemple.com"
+                className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+              />
+              {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Mot de passe</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Confirmer le mot de passe</label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.confirmPassword && <p className="text-xs text-destructive mt-1">{errors.confirmPassword}</p>}
+            </div>
+
+            <div className="flex items-start gap-2 pt-2">
+              <input
+                type="checkbox"
+                name="agreeTerms"
+                id="agreeTerms"
+                checked={formData.agreeTerms}
+                onChange={handleInputChange}
+                className="mt-1 w-4 h-4 rounded border-border accent-primary"
+              />
+              <label htmlFor="agreeTerms" className="text-sm text-muted-foreground">
+                J'accepte les{" "}
+                <Link href="#" className="text-primary hover:text-primary/80 font-medium">
+                  conditions d'utilisation
+                </Link>{" "}
+                et la{" "}
+                <Link href="#" className="text-primary hover:text-primary/80 font-medium">
+                  politique de confidentialité
+                </Link>
+              </label>
+            </div>
+            {errors.agreeTerms && <p className="text-xs text-destructive">{errors.agreeTerms}</p>}
+
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 py-2">
+              Créer mon compte
+            </Button>
+          </form>
+
+          {/* Login Link */}
+          <div className="text-center text-sm">
+            <span className="text-muted-foreground">Déjà inscrit ? </span>
+            <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium transition">
+              Se connecter
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
