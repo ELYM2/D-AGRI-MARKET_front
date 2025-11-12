@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import { Search, MapPin, Filter, ShoppingBag, Star, Leaf } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { baseUrl } from "@/lib/api"
 
 const MOCK_PRODUCTS = [
   {
@@ -106,15 +107,66 @@ const MOCK_PRODUCTS = [
 
 const CATEGORIES = ["Tous", "Légumes", "Fruits", "Produits laitiers", "Œufs & Volaille", "Produits apicoles"]
 
+type ApiProduct = {
+  id: number
+  name: string
+  description?: string
+  price: number | string
+  stock?: number
+  category?: number
+  owner?: number
+}
+
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("Tous")
   const [priceRange, setPriceRange] = useState([0, 20])
   const [sortBy, setSortBy] = useState("popular")
   const [showFilters, setShowFilters] = useState(false)
+  const [apiProducts, setApiProducts] = useState<ApiProduct[] | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      try {
+        setLoading(true)
+        const res = await fetch(`${baseUrl}/api/products/`, { cache: "no-store" })
+        if (!res.ok) throw new Error("Failed to load products")
+        const data = await res.json()
+        if (!cancelled) setApiProducts(Array.isArray(data?.results) ? data.results : data)
+      } catch {
+        if (!cancelled) setApiProducts(null)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const sourceProducts = useMemo(() => {
+    if (apiProducts && apiProducts.length) {
+      return apiProducts.map((p) => ({
+        id: p.id,
+        name: p.name,
+        price: typeof p.price === "string" ? Number.parseFloat(p.price) : (p.price ?? 0),
+        image: "/placeholder.svg",
+        seller: p.owner ? `Vendeur #${p.owner}` : "Vendeur",
+        category: "Tous",
+        rating: 4.5,
+        reviews: 0,
+        distance: 0,
+        fresh: true,
+      }))
+    }
+    return MOCK_PRODUCTS
+  }, [apiProducts])
 
   const filteredProducts = useMemo(() => {
-    let result = MOCK_PRODUCTS
+    let result = sourceProducts
 
     // Filter by search query
     if (searchQuery) {
@@ -143,45 +195,14 @@ export default function ProductsPage() {
     }
 
     return result
-  }, [searchQuery, selectedCategory, priceRange, sortBy])
+  }, [searchQuery, selectedCategory, priceRange, sortBy, sourceProducts])
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card border-b border-border">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Leaf className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">LocalMarket</span>
-          </Link>
-
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/products" className="text-sm font-medium text-primary">
-              Produits
-            </Link>
-            <Link href="/sellers" className="text-sm text-foreground hover:text-primary transition">
-              Producteurs
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link href="/cart">
-              <Button variant="ghost" size="sm" className="relative">
-                <ShoppingBag className="w-5 h-5" />
-              </Button>
-            </Link>
-            <Link href="/account">
-              <Button size="sm" variant="outline">
-                Mon compte
-              </Button>
-            </Link>
-          </div>
-        </nav>
-      </header>
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {loading && (
+          <div className="text-sm text-muted-foreground mb-4">Chargement des produits…</div>
+        )}
         {/* Search Bar */}
         <div className="mb-8 space-y-4">
           <div className="flex flex-col md:flex-row gap-3 bg-card p-3 rounded-lg border border-border">

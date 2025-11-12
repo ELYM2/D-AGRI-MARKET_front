@@ -68,7 +68,7 @@ export default function SellerOrdersPage() {
     <div className="flex h-screen bg-background">
       <aside className={`${sidebarOpen ? "block" : "hidden"} md:block w-64 bg-card border-r border-border`}>
         <div className="p-6 border-b border-border flex items-center justify-between">
-          <span className="font-bold text-foreground">LocalMarket</span>
+          <span className="font-bold text-foreground">D-AGRI MARKET</span>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden">
             <X className="w-5 h-5" />
           </button>

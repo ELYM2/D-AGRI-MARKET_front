@@ -98,7 +98,7 @@ export default function SellerSignupPage() {
               </div>
             </div>
             <h1 className="text-2xl font-bold text-foreground">Devenir vendeur</h1>
-            <p className="text-sm text-muted-foreground">Vendez vos produits locaux sur LocalMarket</p>
+            <p className="text-sm text-muted-foreground">Vendez vos produits locaux sur D-AGRI MARKET</p>
           </div>
 
           {/* Progress Steps */}

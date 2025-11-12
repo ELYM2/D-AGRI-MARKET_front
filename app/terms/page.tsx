@@ -13,7 +13,7 @@ export default function TermsPage() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Leaf className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">LocalMarket</span>
+            <span className="text-xl font-bold text-foreground">D-AGRI MARKET</span>
           </Link>
 
           <Link href="/">
@@ -31,7 +31,7 @@ export default function TermsPage() {
           <section className="space-y-4">
             <h2 className="text-2xl font-bold text-foreground">1. Acceptation des conditions</h2>
             <p className="text-muted-foreground leading-relaxed">
-              En utilisant LocalMarket, vous acceptez ces conditions d'utilisation. Si vous n'acceptez pas ces termes,
+              En utilisant D-AGRI MARKET, vous acceptez ces conditions d'utilisation. Si vous n'acceptez pas ces termes,
               veuillez ne pas utiliser le service.
             </p>
           </section>
@@ -39,7 +39,7 @@ export default function TermsPage() {
           <section className="space-y-4">
             <h2 className="text-2xl font-bold text-foreground">2. Utilisation du service</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Vous acceptez d'utiliser LocalMarket uniquement à des fins légales et conformément aux lois applicables.
+              Vous acceptez d'utiliser D-AGRI MARKET uniquement à des fins légales et conformément aux lois applicables.
               Vous acceptez de ne pas utiliser le service pour :
             </p>
             <ul className="space-y-2 list-disc list-inside text-muted-foreground">
@@ -61,7 +61,7 @@ export default function TermsPage() {
           <section className="space-y-4">
             <h2 className="text-2xl font-bold text-foreground">4. Propriété intellectuelle</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Le contenu de LocalMarket, y compris les textes, images et logos, est la propriété de LocalMarket ou de
+              Le contenu de D-AGRI MARKET, y compris les textes, images et logos, est la propriété de D-AGRI MARKET ou de
               ses fournisseurs de contenu.
             </p>
           </section>
@@ -69,7 +69,7 @@ export default function TermsPage() {
           <section className="space-y-4">
             <h2 className="text-2xl font-bold text-foreground">5. Limitation de responsabilité</h2>
             <p className="text-muted-foreground leading-relaxed">
-              LocalMarket ne sera pas responsable des dommages indirects, accidentels ou consécutifs résultant de votre
+              D-AGRI MARKET ne sera pas responsable des dommages indirects, accidentels ou consécutifs résultant de votre
               utilisation du service.
             </p>
           </section>
@@ -77,7 +77,7 @@ export default function TermsPage() {
           <section className="space-y-4">
             <h2 className="text-2xl font-bold text-foreground">6. Modifications</h2>
             <p className="text-muted-foreground leading-relaxed">
-              LocalMarket se réserve le droit de modifier ces conditions à tout moment. Les modifications prendront
+              D-AGRI MARKET se réserve le droit de modifier ces conditions à tout moment. Les modifications prendront
               effet dès leur publication.
             </p>
           </section>
@@ -86,8 +86,8 @@ export default function TermsPage() {
             <p className="text-sm text-muted-foreground">Dernière mise à jour: Janvier 2025</p>
             <p className="text-sm text-muted-foreground mt-2">
               Pour toute question, veuillez nous contacter à{" "}
-              <a href="mailto:contact@localmarket.fr" className="text-primary hover:underline">
-                contact@localmarket.fr
+              <a href="mailto:contact@D-AGRI MARKET.fr" className="text-primary hover:underline">
+                contact@D-AGRI MARKET.fr
               </a>
             </p>
           </section>

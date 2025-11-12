@@ -13,7 +13,7 @@ export default function AboutPage() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Leaf className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">LocalMarket</span>
+            <span className="text-xl font-bold text-foreground">D-AGRI MARKET</span>
           </Link>
 
           <Link href="/">
@@ -27,7 +27,7 @@ export default function AboutPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-16">
         {/* Hero */}
         <section className="text-center space-y-6">
-          <h1 className="text-5xl font-bold text-foreground">À propos de LocalMarket</h1>
+          <h1 className="text-5xl font-bold text-foreground">À propos de D-AGRI MARKET</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Nous connectons les producteurs locaux avec les consommateurs pour créer une économie plus juste et durable.
           </p>
@@ -38,7 +38,7 @@ export default function AboutPage() {
           <div className="space-y-4">
             <h2 className="text-3xl font-bold text-foreground">Notre mission</h2>
             <p className="text-foreground leading-relaxed">
-              LocalMarket facilite le commerce direct entre les producteurs locaux et les consommateurs. Nous croyons
+              D-AGRI MARKET facilite le commerce direct entre les producteurs locaux et les consommateurs. Nous croyons
               que chacun devrait avoir accès à des produits frais, de qualité, en soutenant directement les agriculteurs
               de sa région.
             </p>

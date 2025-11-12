@@ -30,7 +30,7 @@ export default function ContactPage() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Leaf className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">LocalMarket</span>
+            <span className="text-xl font-bold text-foreground">D-AGRI MARKET</span>
           </Link>
 
           <Link href="/">
@@ -115,8 +115,8 @@ export default function ContactPage() {
                 {
                   icon: Mail,
                   label: "Email",
-                  value: "contact@localmarket.fr",
-                  href: "mailto:contact@localmarket.fr",
+                  value: "contact@D-AGRI MARKET.fr",
+                  href: "mailto:contact@D-AGRI MARKET.fr",
                 },
                 {
                   icon: Phone,

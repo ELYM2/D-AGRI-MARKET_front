@@ -57,7 +57,7 @@ export default function SellerProfilePage() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Leaf className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">LocalMarket</span>
+            <span className="text-xl font-bold text-foreground">D-AGRI MARKET</span>
           </Link>
 
           <Link href="/sellers">

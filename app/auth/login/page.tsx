@@ -4,13 +4,18 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Leaf, Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { login, getMe } from "@/lib/auth"
+import { showToast } from "@/components/toast-notification"
 
 export default function LoginPage() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
+  const [pending, setPending] = useState(false)
   const [formData, setFormData] = useState({
-    email: "",
+    username: "",
     password: "",
   })
 
@@ -22,9 +27,20 @@ export default function LoginPage() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("[v0] Login attempt:", formData)
+    try {
+      setPending(true)
+      await login({ username: formData.username, password: formData.password })
+      const me = await getMe()
+      showToast("success", "Connexion reussie", `Bienvenue ${me?.username ?? ""}`)
+      router.replace("/")
+      router.refresh?.()
+    } catch (err) {
+      showToast("error", "Echec de connexion", "Identifiants invalides")
+    } finally {
+      setPending(false)
+    }
   }
 
   return (
@@ -33,7 +49,7 @@ export default function LoginPage() {
         {/* Back Button */}
         <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition mb-8">
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">Retour à l'accueil</span>
+          <span className="text-sm">Retour a l'accueil</span>
         </Link>
 
         {/* Card */}
@@ -46,19 +62,19 @@ export default function LoginPage() {
               </div>
             </div>
             <h1 className="text-2xl font-bold text-foreground">Connexion</h1>
-            <p className="text-sm text-muted-foreground">Bienvenue sur LocalMarket</p>
+            <p className="text-sm text-muted-foreground">Bienvenue sur D-AGRI MARKET</p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Email</label>
+              <label className="block text-sm font-medium text-foreground mb-2">Nom d'utilisateur</label>
               <input
-                type="email"
-                name="email"
-                value={formData.email}
+                type="text"
+                name="username"
+                value={formData.username}
                 onChange={handleInputChange}
-                placeholder="vous@exemple.com"
+                placeholder="ex: jdupont"
                 required
                 className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
               />
@@ -72,7 +88,7 @@ export default function LoginPage() {
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  placeholder="••••••••"
+                  placeholder="********"
                   required
                   className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
                 />
@@ -86,7 +102,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 py-2">
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 py-2" disabled={pending} isLoading={pending as any}>
               Se connecter
             </Button>
           </form>
@@ -105,7 +121,7 @@ export default function LoginPage() {
           <div className="space-y-3">
             <Link href="/forgot-password">
               <Button variant="outline" className="w-full bg-transparent">
-                Mot de passe oublié ?
+                Mot de passe oublie ?
               </Button>
             </Link>
           </div>
@@ -113,8 +129,8 @@ export default function LoginPage() {
           {/* Signup Link */}
           <div className="text-center text-sm">
             <span className="text-muted-foreground">Pas encore inscrit ? </span>
-            <Link href="/signup" className="text-primary hover:text-primary/80 font-medium transition">
-              Créer un compte
+            <Link href="/auth/signup" className="text-primary hover:text-primary/80 font-medium transition">
+              Creer un compte
             </Link>
           </div>
         </div>

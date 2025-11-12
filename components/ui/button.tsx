@@ -1,6 +1,8 @@
+"use client"
 import * as React from 'react'
 import { Slot } from '@radix-ui/react-slot'
 import { cva, type VariantProps } from 'class-variance-authority'
+import { Loader2 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
@@ -41,19 +43,57 @@ function Button({
   variant,
   size,
   asChild = false,
+  isLoading,
+  disabled,
+  children,
+  onClick,
   ...props
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    isLoading?: boolean
   }) {
-  const Comp = asChild ? Slot : 'button'
+  const Comp = asChild ? Slot : ('button' as any)
+  const [autoLoading, setAutoLoading] = React.useState(false)
+  const loading = typeof isLoading === 'boolean' ? isLoading : autoLoading
+  const computedDisabled = disabled || loading
+
+  const handleClick: React.MouseEventHandler<HTMLButtonElement> | undefined = onClick
+    ? async (e) => {
+        try {
+          const result = onClick(e)
+          if (result && typeof (result as any).then === 'function') {
+            setAutoLoading(true)
+            await (result as any)
+          }
+        } finally {
+          setAutoLoading(false)
+        }
+      }
+    : undefined
+
+  const content = asChild ? (
+    children
+  ) : (
+    <>
+      {loading ? <Loader2 className="size-4 animate-spin" /> : null}
+      {children}
+    </>
+  )
 
   return (
     <Comp
       data-slot="button"
+      data-loading={loading ? '' : undefined}
+      aria-busy={loading || undefined}
+      aria-disabled={computedDisabled || undefined}
+      disabled={asChild ? undefined : computedDisabled}
       className={cn(buttonVariants({ variant, size, className }))}
+      onClick={handleClick}
       {...props}
-    />
+    >
+      {content}
+    </Comp>
   )
 }
 

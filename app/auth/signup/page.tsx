@@ -4,13 +4,19 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Leaf, Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { register, getMe } from "@/lib/auth"
+import { showToast } from "@/components/toast-notification"
 
 export default function SignupPage() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [pending, setPending] = useState(false)
   const [formData, setFormData] = useState({
+    username: "",
     firstName: "",
     lastName: "",
     email: "",
@@ -28,22 +34,31 @@ export default function SignupPage() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const newErrors: Record<string, string> = {}
-
-    if (!formData.firstName) newErrors.firstName = "Le prénom est requis"
+    if (!formData.username) newErrors.username = "Nom d'utilisateur requis"
+    if (!formData.firstName) newErrors.firstName = "Le prenom est requis"
     if (!formData.lastName) newErrors.lastName = "Le nom est requis"
     if (!formData.email) newErrors.email = "L'email est requis"
-    if (formData.password.length < 8) newErrors.password = "Au moins 8 caractères"
-    if (formData.password !== formData.confirmPassword)
-      newErrors.confirmPassword = "Les mots de passe ne correspondent pas"
+    if (formData.password.length < 8) newErrors.password = "Au moins 8 caracteres"
+    if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Les mots de passe ne correspondent pas"
     if (!formData.agreeTerms) newErrors.agreeTerms = "Vous devez accepter les conditions"
 
     setErrors(newErrors)
+    if (Object.keys(newErrors).length > 0) return
 
-    if (Object.keys(newErrors).length === 0) {
-      console.log("[v0] Signup attempt:", formData)
+    try {
+      setPending(true)
+      await register({ username: formData.username, email: formData.email, password: formData.password })
+      const me = await getMe()
+      showToast("success", "Inscription reussie", `Bienvenue ${me?.username ?? ""}`)
+      router.replace("/")
+      router.refresh?.()
+    } catch (err) {
+      showToast("error", "Echec de l'inscription", "Verifiez les champs saisis")
+    } finally {
+      setPending(false)
     }
   }
 
@@ -53,7 +68,7 @@ export default function SignupPage() {
         {/* Back Button */}
         <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition mb-8">
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">Retour à l'accueil</span>
+          <span className="text-sm">Retour a l'accueil</span>
         </Link>
 
         {/* Card */}
@@ -65,15 +80,28 @@ export default function SignupPage() {
                 <Leaf className="w-6 h-6 text-primary-foreground" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Créer un compte</h1>
-            <p className="text-sm text-muted-foreground">Rejoignez la communauté LocalMarket</p>
+            <h1 className="text-2xl font-bold text-foreground">Creer un compte</h1>
+            <p className="text-sm text-muted-foreground">Rejoignez la communaute D-AGRI MARKET</p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Nom d'utilisateur</label>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                placeholder="ex: jdupont"
+                className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+              />
+              {errors.username && <p className="text-xs text-destructive mt-1">{errors.username}</p>}
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Prénom</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Prenom</label>
                 <input
                   type="text"
                   name="firstName"
@@ -120,7 +148,7 @@ export default function SignupPage() {
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  placeholder="••••••••"
+                  placeholder="********"
                   className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
                 />
                 <button
@@ -142,7 +170,7 @@ export default function SignupPage() {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  placeholder="••••••••"
+                  placeholder="********"
                   className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
                 />
                 <button
@@ -166,26 +194,19 @@ export default function SignupPage() {
                 className="mt-1 w-4 h-4 rounded border-border accent-primary"
               />
               <label htmlFor="agreeTerms" className="text-sm text-muted-foreground">
-                J'accepte les{" "}
-                <Link href="#" className="text-primary hover:text-primary/80 font-medium">
-                  conditions d'utilisation
-                </Link>{" "}
-                et la{" "}
-                <Link href="#" className="text-primary hover:text-primary/80 font-medium">
-                  politique de confidentialité
-                </Link>
+                J'accepte les <Link href="#" className="text-primary hover:text-primary/80 font-medium">conditions d'utilisation</Link> et la <Link href="#" className="text-primary hover:text-primary/80 font-medium">politique de confidentialite</Link>
               </label>
             </div>
             {errors.agreeTerms && <p className="text-xs text-destructive">{errors.agreeTerms}</p>}
 
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 py-2">
-              Créer mon compte
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 py-2" disabled={pending} isLoading={pending as any}>
+              Creer mon compte
             </Button>
           </form>
 
           {/* Login Link */}
           <div className="text-center text-sm">
-            <span className="text-muted-foreground">Déjà inscrit ? </span>
+            <span className="text-muted-foreground">Deja inscrit ? </span>
             <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium transition">
               Se connecter
             </Link>
