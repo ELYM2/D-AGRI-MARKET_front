@@ -1,228 +1,123 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import {
-  BarChart3,
-  Package,
-  ShoppingCart,
-  Users,
-  TrendingUp,
-  Plus,
-  Eye,
-  Edit,
-  Trash2,
-  Leaf,
-  Menu,
-  X,
-  LogOut,
-  Settings,
-} from "lucide-react"
+import { BarChart3, Package, ShoppingCart, Users, TrendingUp, Plus, Eye, Edit, Trash2, Leaf } from "lucide-react"
 import { Button } from "@/components/ui/button"
-
-const SELLER_STATS = [
-  { label: "Ventes ce mois", value: "$2,450", change: "+12%", icon: TrendingUp },
-  { label: "Commandes actives", value: "24", change: "+5", icon: ShoppingCart },
-  { label: "Produits", value: "18", change: "3 nouveaux", icon: Package },
-  { label: "Clients", value: "156", change: "+8", icon: Users },
-]
-
-const SELLER_PRODUCTS = [
-  {
-    id: 1,
-    name: "Tomates biologiques",
-    category: "Légumes",
-    price: 4.5,
-    stock: 24,
-    sold: 89,
-    status: "active",
-    image: "/placeholder.svg?key=2uxza",
-  },
-  {
-    id: 2,
-    name: "Laitue biologique",
-    category: "Légumes",
-    price: 2.8,
-    stock: 45,
-    sold: 156,
-    status: "active",
-    image: "/placeholder.svg?key=rcaih",
-  },
-  {
-    id: 3,
-    name: "Herbes aromatiques",
-    category: "Légumes",
-    price: 3.5,
-    stock: 0,
-    sold: 78,
-    status: "outofstock",
-    image: "/placeholder.svg?key=ab123",
-  },
-]
-
-const RECENT_ORDERS = [
-  {
-    id: "ORD-001",
-    customer: "Jean Dupont",
-    items: 3,
-    total: 24.5,
-    status: "delivered",
-    date: "2025-01-15",
-  },
-  {
-    id: "ORD-002",
-    customer: "Marie Martin",
-    items: 2,
-    total: 15.8,
-    status: "processing",
-    date: "2025-01-16",
-  },
-  {
-    id: "ORD-003",
-    customer: "Pierre Bernard",
-    items: 5,
-    total: 48.9,
-    status: "pending",
-    date: "2025-01-16",
-  },
-]
+import { getSellerStats, getProducts } from "@/lib/api"
+import { showToast } from "@/components/toast-notification"
+import { useAuth } from "@/hooks/use-auth"
+import { useRouter } from "next/navigation"
 
 export default function SellerDashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const router = useRouter()
+  const { user } = useAuth()
+  const [stats, setStats] = useState<any>(null)
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "delivered":
-        return "bg-green-100 text-green-800"
-      case "processing":
-        return "bg-blue-100 text-blue-800"
-      case "pending":
-        return "bg-yellow-100 text-yellow-800"
-      case "active":
-        return "bg-green-100 text-green-800"
-      case "outofstock":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
+  useEffect(() => {
+    loadDashboard()
+  }, [])
+
+  const loadDashboard = async () => {
+    try {
+      setLoading(true)
+      const [statsData, productsData] = await Promise.all([
+        getSellerStats().catch(() => ({ total_sales: 0, total_orders: 0, total_products: 0, total_customers: 0 })),
+        getProducts().catch(() => ({ results: [] }))
+      ])
+
+      setStats(statsData)
+      setProducts(productsData.results || [])
+    } catch (error) {
+      console.error("Error loading dashboard:", error)
+      showToast("error", "Erreur", "Impossible de charger le tableau de bord")
+    } finally {
+      setLoading(false)
     }
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Chargement du tableau de bord...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const statsCards = [
+    { label: "Ventes ce mois", value: `$${stats?.total_sales || 0}`, icon: TrendingUp },
+    { label: "Commandes", value: stats?.total_orders || 0, icon: ShoppingCart },
+    { label: "Produits", value: stats?.total_products || products.length, icon: Package },
+    { label: "Clients", value: stats?.total_customers || 0, icon: Users },
+  ]
+
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <aside className={`${sidebarOpen ? "block" : "hidden"} md:block w-64 bg-card border-r border-border`}>
-        <div className="p-6 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-card border-b border-border">
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Leaf className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-bold text-foreground">D-AGRI MARKET</span>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="md:hidden text-muted-foreground hover:text-foreground"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+            <span className="text-xl font-bold text-foreground">D-AGRI MARKET</span>
+          </Link>
 
-        <nav className="p-4 space-y-2">
-          <Link
-            href="/seller"
-            className="flex items-center gap-3 px-4 py-2 bg-primary/10 text-primary rounded-lg font-medium"
-          >
-            <BarChart3 className="w-5 h-5" />
-            Dashboard
-          </Link>
-          <Link
-            href="/seller/products"
-            className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
-          >
-            <Package className="w-5 h-5" />
-            Produits
-          </Link>
-          <Link
-            href="/seller/orders"
-            className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
-          >
-            <ShoppingCart className="w-5 h-5" />
-            Commandes
-          </Link>
-          <Link
-            href="/seller/analytics"
-            className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
-          >
-            <TrendingUp className="w-5 h-5" />
-            Statistiques
-          </Link>
-        </nav>
-
-        <div className="p-4 space-y-2 mt-auto">
-          <Link
-            href="/seller/settings"
-            className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
-          >
-            <Settings className="w-5 h-5" />
-            Paramètres
-          </Link>
-          <button className="w-full flex items-center gap-3 px-4 py-2 text-destructive hover:bg-muted rounded-lg transition">
-            <LogOut className="w-5 h-5" />
-            <span>Déconnexion</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header */}
-        <header className="bg-card border-b border-border px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="md:hidden text-muted-foreground hover:text-foreground"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <h1 className="text-2xl font-bold text-foreground">Tableau de bord</h1>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Link href="/seller/profile">
-              <Button variant="outline" size="sm">
-                Mon profil
+          <div className="flex items-center gap-2">
+            <Link href="/seller/products/new">
+              <Button className="bg-primary hover:bg-primary/90">
+                <Plus className="w-4 h-4 mr-2" />
+                Nouveau produit
               </Button>
             </Link>
           </div>
-        </header>
+        </nav>
+      </header>
 
-        {/* Scrollable Content */}
-        <main className="flex-1 overflow-auto p-6 space-y-8">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {SELLER_STATS.map((stat, index) => {
-              const Icon = stat.icon
-              return (
-                <div key={index} className="bg-card p-6 rounded-lg border border-border">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-muted-foreground">{stat.label}</h3>
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Icon className="w-5 h-5 text-primary" />
-                    </div>
-                  </div>
-                  <div className="flex items-end justify-between">
-                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                    <p className="text-sm text-green-600">{stat.change}</p>
-                  </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Tableau de bord vendeur</h1>
+          <p className="text-muted-foreground">Bienvenue {user?.username || 'Vendeur'}</p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {statsCards.map((stat, index) => (
+            <div key={index} className="bg-card rounded-lg border border-border p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <stat.icon className="w-6 h-6 text-primary" />
                 </div>
-              )
-            })}
+              </div>
+              <p className="text-2xl font-bold text-foreground mb-1">{stat.value}</p>
+              <p className="text-sm text-muted-foreground">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Products Section */}
+        <div className="bg-card rounded-lg border border-border p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-foreground">Mes produits</h2>
+            <Link href="/seller/products/new">
+              <Button variant="outline">
+                <Plus className="w-4 h-4 mr-2" />
+                Ajouter un produit
+              </Button>
+            </Link>
           </div>
 
-          {/* Products Section */}
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-foreground">Mes produits</h2>
+          {products.length === 0 ? (
+            <div className="text-center py-12">
+              <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">Aucun produit</h3>
+              <p className="text-muted-foreground mb-4">Commencez par ajouter votre premier produit</p>
               <Link href="/seller/products/new">
                 <Button className="bg-primary hover:bg-primary/90">
                   <Plus className="w-4 h-4 mr-2" />
@@ -230,121 +125,86 @@ export default function SellerDashboard() {
                 </Button>
               </Link>
             </div>
-
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-muted border-b border-border">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Produit</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Catégorie</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Prix</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Stock</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Ventes</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Statut</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Actions</th>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Produit</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Catégorie</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Prix</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Stock</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Statut</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.slice(0, 10).map((product) => (
+                    <tr key={product.id} className="border-b border-border hover:bg-muted/50 transition">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-10 h-10 bg-muted rounded overflow-hidden flex-shrink-0">
+                            <Image
+                              src={product.images?.[0]?.image || "/placeholder.svg"}
+                              alt={product.name}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <span className="font-medium text-foreground">{product.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-muted-foreground">{product.category_name}</td>
+                      <td className="py-3 px-4 text-sm font-medium text-foreground">${Number(product.price).toFixed(2)}</td>
+                      <td className="py-3 px-4">
+                        <span className={`text-sm ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {product.stock}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                          {product.is_active ? 'Actif' : 'Inactif'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/products/${product.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </Link>
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {SELLER_PRODUCTS.map((product) => (
-                      <tr key={product.id} className="border-b border-border hover:bg-muted/30 transition">
-                        <td className="px-6 py-4 flex items-center gap-3">
-                          <Image
-                            src={product.image || "/placeholder.svg"}
-                            alt={product.name}
-                            width={40}
-                            height={40}
-                            className="h-10 w-10 rounded object-cover"
-                          />
-                          <div>
-                            <p className="font-medium text-foreground">{product.name}</p>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">{product.category}</td>
-                        <td className="px-6 py-4 font-semibold text-foreground">${product.price}</td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${product.stock > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
-                          >
-                            {product.stock} unités
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-foreground">{product.sold}</td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(product.status)}`}
-                          >
-                            {product.status === "active" ? "Actif" : "Rupture"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <button className="p-1 hover:bg-muted rounded transition">
-                              <Eye className="w-4 h-4 text-muted-foreground" />
-                            </button>
-                            <button className="p-1 hover:bg-muted rounded transition">
-                              <Edit className="w-4 h-4 text-muted-foreground" />
-                            </button>
-                            <button className="p-1 hover:bg-muted rounded transition">
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </section>
+          )}
+        </div>
 
-          {/* Recent Orders */}
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-foreground">Commandes récentes</h2>
-              <Link href="/seller/orders">
-                <Button variant="outline" size="sm">
-                  Voir tout
-                </Button>
-              </Link>
-            </div>
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Link href="/seller/products/new" className="bg-card rounded-lg border border-border p-6 hover:border-primary transition">
+            <Plus className="w-8 h-8 text-primary mb-4" />
+            <h3 className="font-semibold text-foreground mb-2">Ajouter un produit</h3>
+            <p className="text-sm text-muted-foreground">Créez un nouveau produit à vendre</p>
+          </Link>
 
-            <div className="grid gap-4">
-              {RECENT_ORDERS.map((order) => (
-                <div
-                  key={order.id}
-                  className="bg-card p-4 rounded-lg border border-border flex items-center justify-between hover:border-primary/20 transition"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-2">
-                      <p className="font-semibold text-foreground">{order.id}</p>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                        {order.status === "delivered"
-                          ? "Livré"
-                          : order.status === "processing"
-                            ? "En cours"
-                            : "En attente"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>Client: {order.customer}</span>
-                      <span>{order.items} article(s)</span>
-                      <span>{order.date}</span>
-                    </div>
-                  </div>
+          <Link href="/seller/orders" className="bg-card rounded-lg border border-border p-6 hover:border-primary transition">
+            <ShoppingCart className="w-8 h-8 text-primary mb-4" />
+            <h3 className="font-semibold text-foreground mb-2">Gérer les commandes</h3>
+            <p className="text-sm text-muted-foreground">Voir et traiter vos commandes</p>
+          </Link>
 
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-primary">${order.total.toFixed(2)}</p>
-                    <Button size="sm" variant="outline" className="mt-2 bg-transparent">
-                      Détails
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        </main>
-      </div>
+          <Link href="/seller/analytics" className="bg-card rounded-lg border border-border p-6 hover:border-primary transition">
+            <BarChart3 className="w-8 h-8 text-primary mb-4" />
+            <h3 className="font-semibold text-foreground mb-2">Statistiques</h3>
+            <p className="text-sm text-muted-foreground">Analysez vos performances</p>
+          </Link>
+        </div>
+      </main>
     </div>
   )
 }

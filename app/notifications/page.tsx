@@ -1,119 +1,74 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Leaf, Bell, Trash2, Archive, AlertCircle, Info, CheckCircle2 } from "lucide-react"
+import { Bell, Check, CheckCheck, Leaf, ArrowLeft, Package, ShoppingCart, Star, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
-
-interface Notification {
-  id: number
-  type: "order" | "promo" | "message" | "system"
-  title: string
-  message: string
-  timestamp: string
-  read: boolean
-  icon: typeof AlertCircle
-}
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: 1,
-    type: "order",
-    title: "Commande livrée",
-    message: "Votre commande #ORD-2025-001 a été livrée avec succès",
-    timestamp: "Il y a 2 heures",
-    read: false,
-    icon: CheckCircle2,
-  },
-  {
-    id: 2,
-    type: "promo",
-    title: "Offre spéciale",
-    message: "Les tomates biologiques de la Ferme du soleil sont en promotion -20%",
-    timestamp: "Il y a 5 heures",
-    read: false,
-    icon: AlertCircle,
-  },
-  {
-    id: 3,
-    type: "message",
-    title: "Nouveau message",
-    message: "Vous avez reçu un message de Laiterie locale",
-    timestamp: "Hier",
-    read: true,
-    icon: Bell,
-  },
-  {
-    id: 4,
-    type: "system",
-    title: "Mise à jour de compte",
-    message: "Votre profil a été modifié avec succès",
-    timestamp: "Il y a 2 jours",
-    read: true,
-    icon: Info,
-  },
-  {
-    id: 5,
-    type: "order",
-    title: "Commande en cours",
-    message: "Votre commande #ORD-2025-002 est en cours de préparation",
-    timestamp: "Il y a 3 jours",
-    read: true,
-    icon: CheckCircle2,
-  },
-]
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "@/lib/api"
+import { showToast } from "@/components/toast-notification"
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS)
-  const [filter, setFilter] = useState<"all" | "unread">("all")
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const filteredNotifications = filter === "unread" ? notifications.filter((n) => !n.read) : notifications
+  useEffect(() => {
+    loadNotifications()
+  }, [])
 
-  const getNotificationColor = (type: string) => {
-    switch (type) {
-      case "order":
-        return "border-blue-200 bg-blue-50"
-      case "promo":
-        return "border-orange-200 bg-orange-50"
-      case "message":
-        return "border-green-200 bg-green-50"
-      case "system":
-        return "border-gray-200 bg-gray-50"
-      default:
-        return "border-border"
+  const loadNotifications = async () => {
+    try {
+      setLoading(true)
+      const data = await getNotifications()
+      setNotifications(Array.isArray(data) ? data : data.results || [])
+    } catch (error) {
+      console.error("Error loading notifications:", error)
+      setNotifications([])
+    } finally {
+      setLoading(false)
     }
   }
 
-  const getIconColor = (type: string) => {
-    switch (type) {
-      case "order":
-        return "text-blue-600"
-      case "promo":
-        return "text-orange-600"
-      case "message":
-        return "text-green-600"
-      case "system":
-        return "text-gray-600"
-      default:
-        return "text-muted-foreground"
+  const handleMarkAsRead = async (id: number) => {
+    try {
+      await markNotificationAsRead(id)
+      await loadNotifications()
+      showToast("success", "Notification", "Marquée comme lue")
+    } catch (error) {
+      console.error("Error marking notification as read:", error)
+      showToast("error", "Erreur", "Impossible de marquer comme lue")
     }
   }
 
-  const markAsRead = (id: number) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllNotificationsAsRead()
+      await loadNotifications()
+      showToast("success", "Notifications", "Toutes marquées comme lues")
+    } catch (error) {
+      console.error("Error marking all as read:", error)
+      showToast("error", "Erreur", "Impossible de marquer toutes comme lues")
+    }
   }
 
-  const deleteNotification = (id: number) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id))
+  const getIcon = (type: string) => {
+    switch (type) {
+      case "order":
+        return ShoppingCart
+      case "review":
+        return Star
+      case "message":
+        return Mail
+      case "product":
+        return Package
+      default:
+        return Bell
+    }
   }
 
-  const archiveNotification = (id: number) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id))
-  }
+  const unreadCount = notifications.filter((n) => !n.is_read).length
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-40 bg-card border-b border-border">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
@@ -122,110 +77,96 @@ export default function NotificationsPage() {
             </div>
             <span className="text-xl font-bold text-foreground">D-AGRI MARKET</span>
           </Link>
-          <Link href="/account">
+          <Link href="/">
             <Button variant="outline" size="sm">
-              Mon compte
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Retour
             </Button>
           </Link>
         </nav>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Notifications</h1>
-          <p className="text-muted-foreground">
-            Vous avez {notifications.filter((n) => !n.read).length} notification(s) non lue(s)
-          </p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Notifications</h1>
+            {unreadCount > 0 && (
+              <p className="text-sm text-muted-foreground">{unreadCount} non lue{unreadCount > 1 ? "s" : ""}</p>
+            )}
+          </div>
+          {unreadCount > 0 && (
+            <Button variant="outline" onClick={handleMarkAllAsRead}>
+              <CheckCheck className="w-4 h-4 mr-2" />
+              Tout marquer comme lu
+            </Button>
+          )}
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex gap-4 mb-6 border-b border-border">
-          <button
-            onClick={() => setFilter("all")}
-            className={`px-4 py-2 font-medium transition border-b-2 ${
-              filter === "all"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Toutes ({notifications.length})
-          </button>
-          <button
-            onClick={() => setFilter("unread")}
-            className={`px-4 py-2 font-medium transition border-b-2 ${
-              filter === "unread"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Non lues ({notifications.filter((n) => !n.read).length})
-          </button>
-        </div>
-
-        {/* Notifications List */}
-        <div className="space-y-3">
-          {filteredNotifications.length > 0 ? (
-            filteredNotifications.map((notification) => {
-              const Icon = notification.icon
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Chargement des notifications...</p>
+            </div>
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="bg-card rounded-lg border border-border p-12 text-center">
+            <Bell className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+            <h2 className="text-xl font-semibold text-foreground mb-2">Aucune notification</h2>
+            <p className="text-muted-foreground">Vous n'avez pas encore de notifications</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {notifications.map((notification) => {
+              const Icon = getIcon(notification.notification_type)
               return (
                 <div
                   key={notification.id}
-                  className={`p-4 rounded-lg border transition ${getNotificationColor(
-                    notification.type,
-                  )} ${!notification.read ? "ring-1 ring-primary/20" : ""}`}
+                  className={`bg-card rounded-lg border border-border p-4 ${!notification.is_read ? "border-l-4 border-l-primary" : ""
+                    }`}
                 >
                   <div className="flex items-start gap-4">
-                    <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${getIconColor(notification.type)}`} />
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h3 className="font-semibold text-foreground">{notification.title}</h3>
-                          <p className="text-sm text-foreground/80 mt-1">{notification.message}</p>
-                        </div>
-                        {!notification.read && <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">{notification.timestamp}</p>
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${!notification.is_read ? "bg-primary/10" : "bg-muted"
+                      }`}>
+                      <Icon className={`w-5 h-5 ${!notification.is_read ? "text-primary" : "text-muted-foreground"}`} />
                     </div>
 
-                    <div className="flex gap-2 flex-shrink-0">
-                      {!notification.read && (
-                        <button
-                          onClick={() => markAsRead(notification.id)}
-                          className="p-2 hover:bg-white/50 rounded-lg transition"
-                          title="Marquer comme lu"
-                        >
-                          <Bell className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => archiveNotification(notification.id)}
-                        className="p-2 hover:bg-white/50 rounded-lg transition"
-                        title="Archiver"
-                      >
-                        <Archive className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                      </button>
-                      <button
-                        onClick={() => deleteNotification(notification.id)}
-                        className="p-2 hover:bg-white/50 rounded-lg transition"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
-                      </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4 mb-1">
+                        <h3 className={`font-semibold text-foreground ${!notification.is_read ? "font-bold" : ""}`}>
+                          {notification.title}
+                        </h3>
+                        {!notification.is_read && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMarkAsRead(notification.id)}
+                            className="flex-shrink-0"
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{notification.message}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(notification.created_at).toLocaleString()}
+                        </p>
+                        {notification.link && (
+                          <Link href={notification.link}>
+                            <Button variant="link" size="sm" className="h-auto p-0 text-xs">
+                              Voir détails →
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               )
-            })
-          ) : (
-            <div className="text-center py-12">
-              <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-              <p className="text-muted-foreground">
-                {filter === "unread" ? "Aucune notification non lue" : "Aucune notification"}
-              </p>
-            </div>
-          )}
-        </div>
+            })}
+          </div>
+        )}
       </main>
     </div>
   )

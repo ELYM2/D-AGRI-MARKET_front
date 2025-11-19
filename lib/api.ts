@@ -1,8 +1,29 @@
+// API Configuration
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
+// Helper function for API calls with authentication
+async function apiCall(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const url = `${baseUrl}${endpoint}`;
+
+  const defaultOptions: RequestInit = {
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+    credentials: "include", // Important for JWT cookies
+    ...options,
+  };
+
+  return fetch(url, defaultOptions);
+}
+
+// Health check
 export async function getHealth(): Promise<{ status: string; service: string } | null> {
   try {
-    const res = await fetch(`${baseUrl}/api/health/`, {
+    const res = await apiCall("/api/health/", {
       cache: "no-store",
     });
     if (!res.ok) return null;
@@ -10,6 +31,291 @@ export async function getHealth(): Promise<{ status: string; service: string } |
   } catch {
     return null;
   }
+}
+
+// Products API
+export async function getProducts(params?: {
+  category?: number;
+  search?: string;
+  price_min?: number;
+  price_max?: number;
+  ordering?: string;
+}) {
+  const queryParams = new URLSearchParams();
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, value.toString());
+      }
+    });
+  }
+
+  const query = queryParams.toString();
+  const res = await apiCall(`/api/products/${query ? `?${query}` : ""}`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch products");
+  return res.json();
+}
+
+export async function getProduct(id: number) {
+  const res = await apiCall(`/api/products/${id}/`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch product");
+  return res.json();
+}
+
+// Categories API
+export async function getCategories() {
+  const res = await apiCall("/api/categories/", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch categories");
+  return res.json();
+}
+
+// Cart API
+export async function getCart() {
+  const res = await apiCall("/api/cart/", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch cart");
+  const data = await res.json();
+  return Array.isArray(data) ? data[0] : data;
+}
+
+export async function addToCart(productId: number, quantity: number = 1) {
+  const res = await apiCall("/api/cart/add_item/", {
+    method: "POST",
+    body: JSON.stringify({ product_id: productId, quantity }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to add to cart");
+  }
+  return res.json();
+}
+
+export async function removeFromCart(itemId: number) {
+  const res = await apiCall("/api/cart/remove_item/", {
+    method: "POST",
+    body: JSON.stringify({ item_id: itemId }),
+  });
+
+  if (!res.ok) throw new Error("Failed to remove from cart");
+  return res.json();
+}
+
+export async function updateCartQuantity(itemId: number, quantity: number) {
+  const res = await apiCall("/api/cart/update_quantity/", {
+    method: "POST",
+    body: JSON.stringify({ item_id: itemId, quantity }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to update quantity");
+  }
+  return res.json();
+}
+
+export async function clearCart() {
+  const res = await apiCall("/api/cart/clear/", {
+    method: "POST",
+  });
+
+  if (!res.ok) throw new Error("Failed to clear cart");
+  return res.json();
+}
+
+// Orders API
+export async function getOrders() {
+  const res = await apiCall("/api/orders/", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch orders");
+  return res.json();
+}
+
+export async function createOrder(data: {
+  shipping_address: string;
+  shipping_city: string;
+  shipping_postal_code: string;
+}) {
+  const res = await apiCall("/api/orders/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to create order");
+  }
+  return res.json();
+}
+
+export async function getOrder(id: number) {
+  const res = await apiCall(`/api/orders/${id}/`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch order");
+  return res.json();
+}
+
+// Reviews API
+export async function getProductReviews(productId: number) {
+  const res = await apiCall(`/api/products/${productId}/reviews/`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch reviews");
+  return res.json();
+}
+
+export async function createReview(data: {
+  product: number;
+  rating: number;
+  comment: string;
+}) {
+  const res = await apiCall("/api/reviews/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to create review");
+  }
+  return res.json();
+}
+
+// Messages API
+export async function getMessages(inbox?: "sent" | "received") {
+  const query = inbox ? `?inbox=${inbox}` : "";
+  const res = await apiCall(`/api/messages/${query}`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch messages");
+  return res.json();
+}
+
+export async function sendMessage(data: {
+  receiver_id: number;
+  subject: string;
+  body: string;
+}) {
+  const res = await apiCall("/api/messages/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) throw new Error("Failed to send message");
+  return res.json();
+}
+
+export async function markMessageAsRead(messageId: number) {
+  const res = await apiCall(`/api/messages/${messageId}/mark_read/`, {
+    method: "POST",
+  });
+
+  if (!res.ok) throw new Error("Failed to mark message as read");
+  return res.json();
+}
+
+// Notifications API
+export async function getNotifications() {
+  const res = await apiCall("/api/notifications/", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch notifications");
+  return res.json();
+}
+
+export async function markNotificationAsRead(notificationId: number) {
+  const res = await apiCall(`/api/notifications/${notificationId}/mark_read/`, {
+    method: "POST",
+  });
+
+  if (!res.ok) throw new Error("Failed to mark notification as read");
+  return res.json();
+}
+
+export async function markAllNotificationsAsRead() {
+  const res = await apiCall("/api/notifications/mark_all_read/", {
+    method: "POST",
+  });
+
+  if (!res.ok) throw new Error("Failed to mark all notifications as read");
+  return res.json();
+}
+
+// Seller Stats API
+export async function getSellerStats() {
+  const res = await apiCall("/api/seller/stats/", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch seller stats");
+  return res.json();
+}
+
+// Auth API
+export async function login(username: string, password: string) {
+  const res = await apiCall("/api/auth/login/", {
+    method: "POST",
+    body: JSON.stringify({ username, password }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to login");
+  }
+  return res.json();
+}
+
+export async function register(data: {
+  username: string;
+  email?: string;
+  password: string;
+}) {
+  const res = await apiCall("/api/auth/register/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to register");
+  }
+  return res.json();
+}
+
+export async function logout() {
+  const res = await apiCall("/api/auth/logout/", {
+    method: "POST",
+  });
+
+  if (!res.ok) throw new Error("Failed to logout");
+  return res.json();
+}
+
+export async function getCurrentUser() {
+  const res = await apiCall("/api/auth/me/", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) return null;
+  return res.json();
 }
 
 export { baseUrl };
