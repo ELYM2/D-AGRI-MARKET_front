@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Search, MapPin, Filter, ShoppingBag, Star, Leaf } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { baseUrl } from "@/lib/api"
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
 
 const MOCK_PRODUCTS = [
   {
