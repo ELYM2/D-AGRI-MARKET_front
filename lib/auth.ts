@@ -1,4 +1,4 @@
-import { baseUrl } from "./api";
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 function dispatchAuthChange() {
   if (typeof window !== "undefined") {

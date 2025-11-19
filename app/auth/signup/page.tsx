@@ -40,10 +40,10 @@ export default function SignupPage() {
     e.preventDefault()
     const newErrors: Record<string, string> = {}
     if (!formData.username) newErrors.username = "Nom d'utilisateur requis"
-    if (!formData.firstName) newErrors.firstName = "Le prenom est requis"
+    if (!formData.firstName) newErrors.firstName = "Le prénom est requis"
     if (!formData.lastName) newErrors.lastName = "Le nom est requis"
     if (!formData.email) newErrors.email = "L'email est requis"
-    if (formData.password.length < 8) newErrors.password = "Au moins 8 caracteres"
+    if (formData.password.length < 8) newErrors.password = "Au moins 8 caractères"
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Les mots de passe ne correspondent pas"
     if (!formData.agreeTerms) newErrors.agreeTerms = "Vous devez accepter les conditions"
 
@@ -54,12 +54,28 @@ export default function SignupPage() {
       setPending(true)
       await register({ username: formData.username, email: formData.email, password: formData.password })
       const me = await reload()
-      showToast("success", "Inscription reussie", `Bienvenue ${me?.username ?? ""}`)
+      showToast("success", "Inscription réussie", `Bienvenue ${me?.username ?? ""}`)
       router.replace("/")
       router.refresh?.()
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      showToast("error", "Echec de l'inscription", "Verifiez les champs saisis")
+      // Gestion des erreurs API spécifiques
+      if (err.response && err.response.data) {
+        const apiErrors = err.response.data
+        const formErrors: Record<string, string> = {}
+
+        if (apiErrors.username) formErrors.username = Array.isArray(apiErrors.username) ? apiErrors.username[0] : apiErrors.username
+        if (apiErrors.email) formErrors.email = Array.isArray(apiErrors.email) ? apiErrors.email[0] : apiErrors.email
+        if (apiErrors.password) formErrors.password = Array.isArray(apiErrors.password) ? apiErrors.password[0] : apiErrors.password
+
+        setErrors(formErrors)
+
+        if (Object.keys(formErrors).length > 0) {
+          showToast("error", "Erreur d'inscription", "Veuillez corriger les erreurs indiquées")
+          return
+        }
+      }
+      showToast("error", "Échec de l'inscription", "Une erreur est survenue. Veuillez réessayer.")
     } finally {
       setPending(false)
     }
@@ -71,7 +87,7 @@ export default function SignupPage() {
         {/* Back Button */}
         <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition mb-8">
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">Retour a l'accueil</span>
+          <span className="text-sm">Retour à l'accueil</span>
         </Link>
 
         {/* Card */}
@@ -83,8 +99,8 @@ export default function SignupPage() {
                 <Leaf className="w-6 h-6 text-primary-foreground" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Creer un compte</h1>
-            <p className="text-sm text-muted-foreground">Rejoignez la communaute D-AGRI MARKET</p>
+            <h1 className="text-2xl font-bold text-foreground">Créer un compte</h1>
+            <p className="text-sm text-muted-foreground">Rejoignez la communauté D-AGRI MARKET</p>
           </div>
 
           {/* Form */}
@@ -97,23 +113,25 @@ export default function SignupPage() {
                 value={formData.username}
                 onChange={handleInputChange}
                 placeholder="ex: jdupont"
-                className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                className={`w-full px-4 py-2 bg-input border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition ${errors.username ? "border-red-500" : "border-border"
+                  }`}
               />
-              {errors.username && <p className="text-xs text-destructive mt-1">{errors.username}</p>}
+              {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Prenom</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Prénom</label>
                 <input
                   type="text"
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleInputChange}
                   placeholder="Jean"
-                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                  className={`w-full px-4 py-2 bg-input border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition ${errors.firstName ? "border-red-500" : "border-border"
+                    }`}
                 />
-                {errors.firstName && <p className="text-xs text-destructive mt-1">{errors.firstName}</p>}
+                {errors.firstName && <p className="mt-1 text-xs text-red-500">{errors.firstName}</p>}
               </div>
 
               <div>
@@ -124,9 +142,10 @@ export default function SignupPage() {
                   value={formData.lastName}
                   onChange={handleInputChange}
                   placeholder="Dupont"
-                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                  className={`w-full px-4 py-2 bg-input border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition ${errors.lastName ? "border-red-500" : "border-border"
+                    }`}
                 />
-                {errors.lastName && <p className="text-xs text-destructive mt-1">{errors.lastName}</p>}
+                {errors.lastName && <p className="mt-1 text-xs text-red-500">{errors.lastName}</p>}
               </div>
             </div>
 
@@ -137,10 +156,11 @@ export default function SignupPage() {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                placeholder="vous@exemple.com"
-                className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                placeholder="jean.dupont@exemple.com"
+                className={`w-full px-4 py-2 bg-input border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition ${errors.email ? "border-red-500" : "border-border"
+                  }`}
               />
-              {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
+              {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
             </div>
 
             <div>
@@ -151,8 +171,9 @@ export default function SignupPage() {
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  placeholder="********"
-                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                  placeholder="••••••••"
+                  className={`w-full px-4 py-2 bg-input border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition ${errors.password ? "border-red-500" : "border-border"
+                    }`}
                 />
                 <button
                   type="button"
@@ -162,7 +183,7 @@ export default function SignupPage() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
+              {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
             </div>
 
             <div>
@@ -173,8 +194,9 @@ export default function SignupPage() {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  placeholder="********"
-                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                  placeholder="••••••••"
+                  className={`w-full px-4 py-2 bg-input border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition ${errors.confirmPassword ? "border-red-500" : "border-border"
+                    }`}
                 />
                 <button
                   type="button"
@@ -184,7 +206,7 @@ export default function SignupPage() {
                   {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {errors.confirmPassword && <p className="text-xs text-destructive mt-1">{errors.confirmPassword}</p>}
+              {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>}
             </div>
 
             <div className="flex items-start gap-2 pt-2">

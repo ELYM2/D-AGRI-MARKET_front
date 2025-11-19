@@ -2,25 +2,42 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { ArrowLeft, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-
-const CATEGORIES = ["Légumes", "Fruits", "Produits laitiers", "Œufs & Volaille", "Produits apicoles", "Autres"]
+import { createProduct, getCategories } from "@/lib/api"
+import { showToast } from "@/components/toast-notification"
 
 export default function NewProductPage() {
+  const router = useRouter()
+  const [categories, setCategories] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     category: "",
     description: "",
     price: "",
     stock: "",
-    images: [] as string[],
+    images: [] as File[],
   })
-
+  const [previewImages, setPreviewImages] = useState<string[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    loadCategories()
+  }, [])
+
+  const loadCategories = async () => {
+    try {
+      const data = await getCategories()
+      setCategories(data.results || [])
+    } catch (error) {
+      console.error("Error loading categories:", error)
+    }
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -28,16 +45,35 @@ export default function NewProductPage() {
       ...prev,
       [name]: value,
     }))
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+    }
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files) {
-      const newImages = Array.from(files).map((file) => URL.createObjectURL(file))
+      const newFiles = Array.from(files)
+      const newPreviews = newFiles.map((file) => URL.createObjectURL(file))
+
       setFormData((prev) => ({
         ...prev,
-        images: [...prev.images, ...newImages],
+        images: [...prev.images, ...newFiles],
       }))
+      setPreviewImages((prev) => [...prev, ...newPreviews])
+
+      if (errors.images) {
+        setErrors(prev => {
+          const newErrors = { ...prev }
+          delete newErrors.images
+          return newErrors
+        })
+      }
     }
   }
 
@@ -46,9 +82,10 @@ export default function NewProductPage() {
       ...prev,
       images: prev.images.filter((_, i) => i !== index),
     }))
+    setPreviewImages((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const newErrors: Record<string, string> = {}
 
@@ -61,7 +98,39 @@ export default function NewProductPage() {
     setErrors(newErrors)
 
     if (Object.keys(newErrors).length === 0) {
-      alert("Produit créé avec succès!")
+      try {
+        setLoading(true)
+        const data = new FormData()
+        data.append("name", formData.name)
+        data.append("category", formData.category) // Assuming category ID is sent
+        data.append("description", formData.description)
+        data.append("price", formData.price)
+        data.append("stock", formData.stock)
+
+        // Append images
+        formData.images.forEach((file) => {
+          data.append("uploaded_images", file)
+        })
+
+        await createProduct(data)
+        showToast("success", "Succès", "Produit créé avec succès")
+        router.push("/seller")
+      } catch (err: any) {
+        console.error("Error creating product:", err)
+        try {
+          const errorData = JSON.parse(err.message)
+          const apiErrors: Record<string, string> = {}
+          Object.keys(errorData).forEach(key => {
+            apiErrors[key] = Array.isArray(errorData[key]) ? errorData[key][0] : errorData[key]
+          })
+          setErrors(apiErrors)
+          showToast("error", "Erreur", "Veuillez corriger les erreurs indiquées")
+        } catch {
+          showToast("error", "Erreur", "Impossible de créer le produit")
+        }
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -82,7 +151,7 @@ export default function NewProductPage() {
             <h2 className="text-lg font-semibold text-foreground mb-4">Images du produit</h2>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              {formData.images.map((image, index) => (
+              {previewImages.map((image, index) => (
                 <div key={index} className="relative group">
                   <Image
                     src={image || "/placeholder.svg"}
@@ -101,8 +170,9 @@ export default function NewProductPage() {
                 </div>
               ))}
 
-              <label className="border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center h-24 cursor-pointer hover:border-primary/50 transition group">
-                <Upload className="w-6 h-6 text-muted-foreground group-hover:text-primary transition" />
+              <label className={`border-2 border-dashed rounded-lg flex flex-col items-center justify-center h-24 cursor-pointer hover:border-primary/50 transition group ${errors.images ? "border-red-500 bg-red-50" : "border-border"
+                }`}>
+                <Upload className={`w-6 h-6 transition ${errors.images ? "text-red-500" : "text-muted-foreground group-hover:text-primary"}`} />
                 <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
               </label>
             </div>
@@ -122,7 +192,8 @@ export default function NewProductPage() {
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Ex: Tomates biologiques"
-                className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                className={`w-full px-4 py-2 bg-input border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition ${errors.name ? "border-red-500" : "border-border"
+                  }`}
               />
               {errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}
             </div>
@@ -134,12 +205,13 @@ export default function NewProductPage() {
                   name="category"
                   value={formData.category}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition"
+                  className={`w-full px-4 py-2 bg-input border rounded-lg outline-none text-foreground focus:border-primary transition ${errors.category ? "border-red-500" : "border-border"
+                    }`}
                 >
                   <option value="">Sélectionner une catégorie</option>
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
                     </option>
                   ))}
                 </select>
@@ -155,7 +227,8 @@ export default function NewProductPage() {
                   onChange={handleInputChange}
                   placeholder="0.00"
                   step="0.01"
-                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                  className={`w-full px-4 py-2 bg-input border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition ${errors.price ? "border-red-500" : "border-border"
+                    }`}
                 />
                 {errors.price && <p className="text-sm text-destructive mt-1">{errors.price}</p>}
               </div>
@@ -169,7 +242,8 @@ export default function NewProductPage() {
                 value={formData.stock}
                 onChange={handleInputChange}
                 placeholder="0"
-                className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                className={`w-full px-4 py-2 bg-input border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition ${errors.stock ? "border-red-500" : "border-border"
+                  }`}
               />
               {errors.stock && <p className="text-sm text-destructive mt-1">{errors.stock}</p>}
             </div>
@@ -194,8 +268,8 @@ export default function NewProductPage() {
                 Annuler
               </Button>
             </Link>
-            <Button type="submit" className="bg-primary hover:bg-primary/90">
-              Créer le produit
+            <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={loading}>
+              {loading ? "Création en cours..." : "Créer le produit"}
             </Button>
           </div>
         </form>

@@ -8,11 +8,17 @@ async function apiCall(
 ): Promise<Response> {
   const url = `${baseUrl}${endpoint}`;
 
+  const headers: HeadersInit = {
+    ...options.headers,
+  };
+
+  // Only add Content-Type if body is not FormData
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+
   const defaultOptions: RequestInit = {
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+    headers,
     credentials: "include", // Important for JWT cookies
     ...options,
   };
@@ -65,6 +71,19 @@ export async function getProduct(id: number) {
   });
 
   if (!res.ok) throw new Error("Failed to fetch product");
+  return res.json();
+}
+
+export async function createProduct(formData: FormData) {
+  const res = await apiCall("/api/products/", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(JSON.stringify(error));
+  }
   return res.json();
 }
 
@@ -161,46 +180,19 @@ export async function createOrder(data: {
   return res.json();
 }
 
-export async function getOrder(id: number) {
-  const res = await apiCall(`/api/orders/${id}/`, {
+// Seller API
+export async function getSellerStats() {
+  const res = await apiCall("/api/seller/stats/", {
     cache: "no-store",
   });
 
-  if (!res.ok) throw new Error("Failed to fetch order");
-  return res.json();
-}
-
-// Reviews API
-export async function getProductReviews(productId: number) {
-  const res = await apiCall(`/api/products/${productId}/reviews/`, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) throw new Error("Failed to fetch reviews");
-  return res.json();
-}
-
-export async function createReview(data: {
-  product: number;
-  rating: number;
-  comment: string;
-}) {
-  const res = await apiCall("/api/reviews/", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.error || "Failed to create review");
-  }
+  if (!res.ok) throw new Error("Failed to fetch seller stats");
   return res.json();
 }
 
 // Messages API
-export async function getMessages(inbox?: "sent" | "received") {
-  const query = inbox ? `?inbox=${inbox}` : "";
-  const res = await apiCall(`/api/messages/${query}`, {
+export async function getMessages(box: "inbox" | "sent" = "inbox") {
+  const res = await apiCall(`/api/messages/?box=${box}`, {
     cache: "no-store",
   });
 
@@ -208,11 +200,7 @@ export async function getMessages(inbox?: "sent" | "received") {
   return res.json();
 }
 
-export async function sendMessage(data: {
-  receiver_id: number;
-  subject: string;
-  body: string;
-}) {
+export async function sendMessage(data: { receiver: number; subject: string; body: string }) {
   const res = await apiCall("/api/messages/", {
     method: "POST",
     body: JSON.stringify(data),
@@ -222,8 +210,8 @@ export async function sendMessage(data: {
   return res.json();
 }
 
-export async function markMessageAsRead(messageId: number) {
-  const res = await apiCall(`/api/messages/${messageId}/mark_read/`, {
+export async function markMessageAsRead(id: number) {
+  const res = await apiCall(`/api/messages/${id}/mark_read/`, {
     method: "POST",
   });
 
@@ -241,8 +229,8 @@ export async function getNotifications() {
   return res.json();
 }
 
-export async function markNotificationAsRead(notificationId: number) {
-  const res = await apiCall(`/api/notifications/${notificationId}/mark_read/`, {
+export async function markNotificationAsRead(id: number) {
+  const res = await apiCall(`/api/notifications/${id}/mark_read/`, {
     method: "POST",
   });
 
@@ -258,64 +246,3 @@ export async function markAllNotificationsAsRead() {
   if (!res.ok) throw new Error("Failed to mark all notifications as read");
   return res.json();
 }
-
-// Seller Stats API
-export async function getSellerStats() {
-  const res = await apiCall("/api/seller/stats/", {
-    cache: "no-store",
-  });
-
-  if (!res.ok) throw new Error("Failed to fetch seller stats");
-  return res.json();
-}
-
-// Auth API
-export async function login(username: string, password: string) {
-  const res = await apiCall("/api/auth/login/", {
-    method: "POST",
-    body: JSON.stringify({ username, password }),
-  });
-
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.error || "Failed to login");
-  }
-  return res.json();
-}
-
-export async function register(data: {
-  username: string;
-  email?: string;
-  password: string;
-}) {
-  const res = await apiCall("/api/auth/register/", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.error || "Failed to register");
-  }
-  return res.json();
-}
-
-export async function logout() {
-  const res = await apiCall("/api/auth/logout/", {
-    method: "POST",
-  });
-
-  if (!res.ok) throw new Error("Failed to logout");
-  return res.json();
-}
-
-export async function getCurrentUser() {
-  const res = await apiCall("/api/auth/me/", {
-    cache: "no-store",
-  });
-
-  if (!res.ok) return null;
-  return res.json();
-}
-
-export { baseUrl };
