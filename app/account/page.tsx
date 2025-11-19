@@ -118,8 +118,10 @@ export default function AccountPage() {
       setLogoutPending(true)
       await logout()
       showToast("success", "Deconnecte", "A bientot")
-      router.replace("/")
-    } finally {
+      // Force hard reload to clear all states
+      window.location.href = "/"
+    } catch (error) {
+      console.error("Logout error:", error)
       setLogoutPending(false)
     }
   }
@@ -207,9 +209,8 @@ export default function AccountPage() {
               <nav className="space-y-2">
                 <button
                   onClick={() => setActiveTab("profile")}
-                  className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition ${
-                    activeTab === "profile" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition ${activeTab === "profile" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                    }`}
                 >
                   <User className="w-5 h-5" />
                   <span className="text-sm font-medium">Profil</span>
@@ -217,9 +218,8 @@ export default function AccountPage() {
 
                 <button
                   onClick={() => setActiveTab("orders")}
-                  className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition ${
-                    activeTab === "orders" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition ${activeTab === "orders" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                    }`}
                 >
                   <Bell className="w-5 h-5" />
                   <span className="text-sm font-medium">Commandes</span>
@@ -227,9 +227,8 @@ export default function AccountPage() {
 
                 <button
                   onClick={() => setActiveTab("favorites")}
-                  className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition ${
-                    activeTab === "favorites" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition ${activeTab === "favorites" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                    }`}
                 >
                   <Heart className="w-5 h-5" />
                   <span className="text-sm font-medium">Favoris</span>
@@ -237,9 +236,8 @@ export default function AccountPage() {
 
                 <button
                   onClick={() => setActiveTab("preferences")}
-                  className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition ${
-                    activeTab === "preferences" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition ${activeTab === "preferences" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                    }`}
                 >
                   <Settings className="w-5 h-5" />
                   <span className="text-sm font-medium">Paramètres</span>

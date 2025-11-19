@@ -7,6 +7,7 @@ interface ProductCardProps {
   id: number
   name: string
   price: number
+  old_price?: number
   image: string
   seller: string
   rating: number
@@ -15,7 +16,7 @@ interface ProductCardProps {
   fresh: boolean
 }
 
-export function ProductCard({ id, name, price, image, seller, rating, reviews, distance, fresh }: ProductCardProps) {
+export function ProductCard({ id, name, price, old_price, image, seller, rating, reviews, distance, fresh }: ProductCardProps) {
   return (
     <Link href={`/products/${id}`}>
       <div className="bg-card rounded-lg border border-border overflow-hidden hover:border-primary/20 transition group cursor-pointer h-full flex flex-col">
@@ -55,7 +56,12 @@ export function ProductCard({ id, name, price, image, seller, rating, reviews, d
 
           <div className="flex items-center justify-between pt-3 border-t border-border">
             <div>
-              <p className="text-lg font-bold text-primary">${price.toFixed(2)}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-lg font-bold text-primary">${price.toFixed(2)}</p>
+                {old_price && old_price > price && (
+                  <p className="text-sm text-muted-foreground line-through">${old_price.toFixed(2)}</p>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                 <MapPin className="w-3 h-3" />
                 {distance}km

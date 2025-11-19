@@ -1,13 +1,12 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Space_Grotesk } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { ToastContainer } from "@/components/toast-notification"
 import { AuthProvider } from "@/hooks/use-auth"
 import "./globals.css"
 
-const fontSans = Geist({ subsets: ["latin"], variable: "--font-sans" })
-const fontMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
+const fontSans = Space_Grotesk({ subsets: ["latin"], variable: "--font-sans" })
 
 export const metadata: Metadata = {
   title: "LocalMarket - Achetez local, soutenez les producteurs",
@@ -39,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className={`${fontSans.className} ${fontMono.className} antialiased`}>
+      <body className={`${fontSans.className} antialiased`}>
         <AuthProvider>
           {children}
           <Analytics />

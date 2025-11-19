@@ -173,7 +173,12 @@ export default function ProductDetailPage() {
             <div className="border-t border-b border-border py-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Prix:</span>
-                <span className="text-3xl font-bold text-primary">${Number(product.price).toFixed(2)}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl font-bold text-primary">${Number(product.price).toFixed(2)}</span>
+                  {product.old_price && Number(product.old_price) > Number(product.price) && (
+                    <span className="text-xl text-muted-foreground line-through">${Number(product.old_price).toFixed(2)}</span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Vendeur:</span>

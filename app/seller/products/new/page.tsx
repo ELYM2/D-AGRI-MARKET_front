@@ -20,6 +20,7 @@ export default function NewProductPage() {
     category: "",
     description: "",
     price: "",
+    old_price: "",
     stock: "",
     images: [] as File[],
   })
@@ -105,6 +106,9 @@ export default function NewProductPage() {
         data.append("category", formData.category) // Assuming category ID is sent
         data.append("description", formData.description)
         data.append("price", formData.price)
+        if (formData.old_price) {
+          data.append("old_price", formData.old_price)
+        }
         data.append("stock", formData.stock)
 
         // Append images
@@ -231,6 +235,22 @@ export default function NewProductPage() {
                     }`}
                 />
                 {errors.price && <p className="text-sm text-destructive mt-1">{errors.price}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Prix d'origine (€) <span className="text-muted-foreground text-xs">(optionnel, pour promotions)</span>
+                </label>
+                <input
+                  type="number"
+                  name="old_price"
+                  value={formData.old_price}
+                  onChange={handleInputChange}
+                  placeholder="0.00"
+                  step="0.01"
+                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Laissez vide si pas de promotion</p>
               </div>
             </div>
 

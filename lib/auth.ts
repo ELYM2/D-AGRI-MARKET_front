@@ -13,7 +13,10 @@ export async function register(payload: { username: string; email?: string; pass
     body: JSON.stringify(payload),
     credentials: "include",
   });
-  if (!res.ok) throw new Error("Registration failed");
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(JSON.stringify(errorData) || "Registration failed");
+  }
   const data = await res.json();
   dispatchAuthChange();
   return data;
@@ -27,7 +30,10 @@ export async function login(payload: { username: string; password: string }) {
     cache: "no-store",
     credentials: "include",
   });
-  if (!res.ok) throw new Error("Login failed");
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(JSON.stringify(errorData) || "Login failed");
+  }
   const data = await res.json();
   dispatchAuthChange();
   return data;
