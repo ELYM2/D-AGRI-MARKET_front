@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Send, Search, Leaf, Smile, Paperclip } from "lucide-react"
 import { showToast } from "@/components/toast-notification"
 
@@ -143,10 +144,12 @@ export default function MessagesPage() {
                   selectedConversation === conversation.id ? "bg-primary/10" : "hover:bg-muted"
                 }`}
               >
-                <img
+                <Image
                   src={conversation.avatar || "/placeholder.svg"}
                   alt={conversation.name}
-                  className="w-10 h-10 rounded-full object-cover"
+                  width={40}
+                  height={40}
+                  className="h-10 w-10 rounded-full object-cover"
                 />
 
                 <div className="flex-1 text-left min-w-0">
@@ -173,10 +176,12 @@ export default function MessagesPage() {
           <div className="border-b border-border p-4 bg-card">
             {MOCK_CONVERSATIONS.find((c) => c.id === selectedConversation) && (
               <div className="flex items-center gap-3">
-                <img
+                <Image
                   src={MOCK_CONVERSATIONS.find((c) => c.id === selectedConversation)?.avatar || "/placeholder.svg"}
                   alt="Conversation"
-                  className="w-10 h-10 rounded-full object-cover"
+                  width={40}
+                  height={40}
+                  className="h-10 w-10 rounded-full object-cover"
                 />
                 <div>
                   <h2 className="font-semibold text-foreground">

@@ -7,10 +7,9 @@ export async function getHealth(): Promise<{ status: string; service: string } |
     });
     if (!res.ok) return null;
     return res.json();
-  } catch (e) {
+  } catch {
     return null;
   }
 }
 
 export { baseUrl };
-

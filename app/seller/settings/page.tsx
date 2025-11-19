@@ -1,4 +1,5 @@
 "use client"
+import Link from "next/link"
 import { Menu, X, MapPin, Clock, FileText, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
@@ -39,27 +40,27 @@ export default function SettingsPage() {
         </div>
 
         <nav className="p-4 space-y-2">
-          <a href="/seller" className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg">
+          <Link href="/seller" className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg">
             Dashboard
-          </a>
-          <a
+          </Link>
+          <Link
             href="/seller/analytics"
             className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg"
           >
             Statistiques
-          </a>
-          <a
+          </Link>
+          <Link
             href="/seller/orders"
             className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg"
           >
             Commandes
-          </a>
-          <a
+          </Link>
+          <Link
             href="/seller/settings"
             className="flex items-center gap-3 px-4 py-2 bg-primary/10 text-primary rounded-lg font-medium"
           >
             Paramètres
-          </a>
+          </Link>
         </nav>
       </aside>
 
@@ -154,7 +155,7 @@ export default function SettingsPage() {
             </h2>
 
             <div className="space-y-4">
-              {["Lundi", "Samedi", "Dimanche"].map((day, idx) => (
+              {["Lundi", "Samedi", "Dimanche"].map((day) => (
                 <div key={day} className="flex items-center gap-4">
                   <span className="w-24 font-medium text-foreground">{day}</span>
                   <input

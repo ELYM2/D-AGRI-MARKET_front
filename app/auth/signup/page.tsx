@@ -7,11 +7,13 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Leaf, Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { register, getMe } from "@/lib/auth"
+import { register } from "@/lib/auth"
 import { showToast } from "@/components/toast-notification"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function SignupPage() {
   const router = useRouter()
+  const { reload } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [pending, setPending] = useState(false)
@@ -51,11 +53,12 @@ export default function SignupPage() {
     try {
       setPending(true)
       await register({ username: formData.username, email: formData.email, password: formData.password })
-      const me = await getMe()
+      const me = await reload()
       showToast("success", "Inscription reussie", `Bienvenue ${me?.username ?? ""}`)
       router.replace("/")
       router.refresh?.()
     } catch (err) {
+      console.error(err)
       showToast("error", "Echec de l'inscription", "Verifiez les champs saisis")
     } finally {
       setPending(false)
@@ -199,7 +202,7 @@ export default function SignupPage() {
             </div>
             {errors.agreeTerms && <p className="text-xs text-destructive">{errors.agreeTerms}</p>}
 
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 py-2" disabled={pending} isLoading={pending as any}>
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 py-2" disabled={pending} isLoading={pending}>
               Creer mon compte
             </Button>
           </form>

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Search, MapPin, Filter, ShoppingBag, Star, Leaf } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { baseUrl } from "@/lib/api"
@@ -360,10 +361,12 @@ export default function ProductsPage() {
                   <div className="bg-card rounded-lg border border-border overflow-hidden hover:border-primary/20 transition group cursor-pointer h-full flex flex-col">
                     {/* Product Image */}
                     <div className="relative overflow-hidden bg-muted h-48 flex items-center justify-center">
-                      <img
+                      <Image
                         src={product.image || "/placeholder.svg"}
                         alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        fill
+                        className="object-cover transition duration-300 group-hover:scale-105"
+                        sizes="(max-width: 1024px) 50vw, 33vw"
                       />
                       {product.fresh && (
                         <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">

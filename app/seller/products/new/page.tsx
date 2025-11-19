@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowLeft, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -83,10 +84,12 @@ export default function NewProductPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               {formData.images.map((image, index) => (
                 <div key={index} className="relative group">
-                  <img
+                  <Image
                     src={image || "/placeholder.svg"}
                     alt={`Product ${index}`}
-                    className="w-full h-24 object-cover rounded-lg"
+                    width={200}
+                    height={96}
+                    className="h-24 w-full rounded-lg object-cover"
                   />
                   <button
                     type="button"

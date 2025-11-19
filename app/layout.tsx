@@ -3,10 +3,11 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { ToastContainer } from "@/components/toast-notification"
+import { AuthProvider } from "@/hooks/use-auth"
 import "./globals.css"
 
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
+const fontSans = Geist({ subsets: ["latin"], variable: "--font-sans" })
+const fontMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
 
 export const metadata: Metadata = {
   title: "LocalMarket - Achetez local, soutenez les producteurs",
@@ -38,10 +39,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className={`font-sans antialiased`}>
-        {children}
-        <Analytics />
-        <ToastContainer />
+      <body className={`${fontSans.className} ${fontMono.className} antialiased`}>
+        <AuthProvider>
+          {children}
+          <Analytics />
+          <ToastContainer />
+        </AuthProvider>
       </body>
     </html>
   )

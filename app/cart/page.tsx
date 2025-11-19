@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Leaf } from "lucide-react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 
 interface CartItem {
@@ -104,10 +105,13 @@ export default function CartPage() {
                 >
                   {/* Product Image */}
                   <div className="w-24 h-24 flex-shrink-0 bg-muted rounded-lg overflow-hidden">
-                    <img
+                    <Image
                       src={item.image || "/placeholder.svg"}
                       alt={item.name}
-                      className="w-full h-full object-cover"
+                      width={96}
+                      height={96}
+                      className="h-full w-full object-cover"
+                      sizes="96px"
                     />
                   </div>
 

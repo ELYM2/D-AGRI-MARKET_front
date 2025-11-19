@@ -1,12 +1,14 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { register, getMe } from "@/lib/auth"
+import { register } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { showToast } from "@/components/toast-notification"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { reload } = useAuth()
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -17,11 +19,12 @@ export default function RegisterPage() {
     try {
       setPending(true)
       await register({ username, email, password })
-      const me = await getMe()
-      showToast("success", "Inscription réussie", `Bienvenue ${me?.username ?? ""}`)
+      const me = await reload()
+      showToast("success", "Inscription reussie", `Bienvenue ${me?.username ?? ""}`)
       router.push("/")
-    } catch (err: any) {
-      showToast("error", "Échec de l’inscription", "Vérifiez les champs saisis")
+    } catch (err) {
+      console.error(err)
+      showToast("error", "Echec de l'inscription", "Verifiez les champs saisis")
     } finally {
       setPending(false)
     }

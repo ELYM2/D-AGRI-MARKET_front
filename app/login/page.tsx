@@ -1,12 +1,13 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { login, getMe } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { showToast } from "@/components/toast-notification"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login: loginUser } = useAuth()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [pending, setPending] = useState(false)
@@ -15,12 +16,12 @@ export default function LoginPage() {
     e.preventDefault()
     try {
       setPending(true)
-      await login({ username, password })
-      const me = await getMe()
-      showToast("success", "Connecté", `Bienvenue ${me?.username ?? ""}`)
+      const me = await loginUser({ username, password })
+      showToast("success", "Connecte", `Bienvenue ${me?.username ?? ""}`)
       router.push("/")
     } catch (err) {
-      showToast("error", "Échec de connexion", "Identifiants invalides")
+      console.error(err)
+      showToast("error", "Echec de connexion", "Identifiants invalides")
     } finally {
       setPending(false)
     }

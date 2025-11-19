@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { User, Heart, Settings, LogOut, MapPin, Phone, Mail, Edit2, Leaf, Bell, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { showToast } from "@/components/toast-notification"
+import { useAuth } from "@/hooks/use-auth"
 
 type AccountTab = "profile" | "orders" | "favorites" | "preferences"
 
@@ -47,6 +49,8 @@ const MOCK_FAVORITES = [
 ]
 
 export default function AccountPage() {
+  const router = useRouter()
+  const { me, loading, logout, updateProfile } = useAuth()
   const [activeTab, setActiveTab] = useState<AccountTab>("profile")
   const [isEditing, setIsEditing] = useState(false)
   const [profileData, setProfileData] = useState({
@@ -58,6 +62,67 @@ export default function AccountPage() {
     city: "Paris",
     postalCode: "75000",
   })
+  const [logoutPending, setLogoutPending] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
+
+  useEffect(() => {
+    if (me) {
+      setProfileData((prev) => ({
+        ...prev,
+        firstName: me.first_name ?? prev.firstName,
+        lastName: me.last_name ?? prev.lastName,
+        email: me.email ?? prev.email,
+        phone: me.profile?.phone ?? prev.phone,
+        address: me.profile?.address ?? prev.address,
+        city: me.profile?.city ?? prev.city,
+        postalCode: me.profile?.postal_code ?? prev.postalCode,
+      }))
+    }
+  }, [me])
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true)
+    try {
+      const payload = {
+        first_name: profileData.firstName || undefined,
+        last_name: profileData.lastName || undefined,
+        email: profileData.email || undefined,
+        phone: profileData.phone || "",
+        address: profileData.address || "",
+        city: profileData.city || "",
+        postal_code: profileData.postalCode || "",
+      }
+      const updated = await updateProfile(payload)
+      setIsEditing(false)
+      setProfileData((prev) => ({
+        ...prev,
+        firstName: updated?.first_name ?? prev.firstName,
+        lastName: updated?.last_name ?? prev.lastName,
+        email: updated?.email ?? prev.email,
+        phone: updated?.profile?.phone ?? prev.phone,
+        address: updated?.profile?.address ?? prev.address,
+        city: updated?.profile?.city ?? prev.city,
+        postalCode: updated?.profile?.postal_code ?? prev.postalCode,
+      }))
+      showToast("success", "Profil mis a jour", "Vos modifications ont ete enregistre")
+    } catch (err) {
+      console.error(err)
+      showToast("error", "Erreur", "Impossible de mettre a jour le profil")
+    } finally {
+      setSavingProfile(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    try {
+      setLogoutPending(true)
+      await logout()
+      showToast("success", "Deconnecte", "A bientot")
+      router.replace("/")
+    } finally {
+      setLogoutPending(false)
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -83,6 +148,33 @@ export default function AccountPage() {
       default:
         return status
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">Chargement du profil...</p>
+      </div>
+    )
+  }
+
+  if (!me) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 text-center space-y-4">
+        <h1 className="text-2xl font-bold">Connexion requise</h1>
+        <p className="text-muted-foreground max-w-sm">
+          Vous devez etre connecte pour acceder a votre espace client.
+        </p>
+        <div className="flex gap-3">
+          <Button asChild>
+            <Link href="/auth/login">Se connecter</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/auth/signup">Creer un compte</Link>
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -155,9 +247,13 @@ export default function AccountPage() {
               </nav>
 
               <div className="border-t border-border pt-4">
-                <button className="w-full flex items-center gap-3 px-4 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition disabled:opacity-60"
+                  disabled={logoutPending}
+                >
                   <LogOut className="w-5 h-5" />
-                  <span className="text-sm font-medium">Déconnexion</span>
+                  <span className="text-sm font-medium">{logoutPending ? "Deconnexion..." : "Se deconnecter"}</span>
                 </button>
               </div>
             </div>
@@ -282,15 +378,10 @@ export default function AccountPage() {
                       </div>
                       <div className="md:col-span-2 flex gap-4">
                         <Button
-                          onClick={() => {
-                            setIsEditing(false)
-                            showToast(
-                              "success",
-                              "Profil mis à jour",
-                              "Vos modifications ont été enregistrées avec succès",
-                            )
-                          }}
+                          onClick={handleSaveProfile}
                           className="flex-1 bg-primary hover:bg-primary/90"
+                          isLoading={savingProfile}
+                          disabled={savingProfile}
                         >
                           Enregistrer les modifications
                         </Button>

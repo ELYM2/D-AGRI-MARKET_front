@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { AlertCircle, CheckCircle2, Info, AlertTriangle, X } from "lucide-react"
 
 export type ToastType = "success" | "error" | "info" | "warning"
@@ -11,6 +11,14 @@ interface Toast {
   title: string
   message: string
   duration?: number
+}
+
+type ToastPayload = Omit<Toast, "id">
+
+declare global {
+  interface WindowEventMap {
+    toast: CustomEvent<ToastPayload>
+  }
 }
 
 const toastIcons = {
@@ -30,12 +38,17 @@ const toastColors = {
 export function ToastContainer() {
   const [toasts, setToasts] = useState<Toast[]>([])
 
-  // CHANGE: Listen for custom toast events
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id))
+  }, [])
+
   useEffect(() => {
-    const handleToast = (event: CustomEvent) => {
-      const toast: Toast = event.detail
-      const id = Math.random().toString(36).substr(2, 9)
-      const newToast = { ...toast, id, duration: toast.duration || 3000 }
+    const handleToast = (event: Event) => {
+      const toastEvent = event as CustomEvent<ToastPayload>
+      const toast = toastEvent.detail
+      if (!toast) return
+      const id = Math.random().toString(36).slice(2, 11)
+      const newToast: Toast = { ...toast, id, duration: toast.duration || 3000 }
 
       setToasts((prev) => [...prev, newToast])
 
@@ -46,13 +59,9 @@ export function ToastContainer() {
       }
     }
 
-    window.addEventListener("toast" as any, handleToast)
-    return () => window.removeEventListener("toast" as any, handleToast)
-  }, [])
-
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id))
-  }
+    window.addEventListener("toast", handleToast)
+    return () => window.removeEventListener("toast", handleToast)
+  }, [removeToast])
 
   return (
     <div className="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none">
@@ -83,8 +92,9 @@ export function ToastContainer() {
 
 // CHANGE: Utility function to trigger toasts
 export function showToast(type: ToastType, title: string, message: string, duration?: number) {
+  if (typeof window === "undefined") return
   window.dispatchEvent(
-    new CustomEvent("toast", {
+    new CustomEvent<ToastPayload>("toast", {
       detail: { type, title, message, duration },
     }),
   )

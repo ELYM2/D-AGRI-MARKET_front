@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import {
   BarChart3,
   Package,
@@ -127,44 +128,44 @@ export default function SellerDashboard() {
         </div>
 
         <nav className="p-4 space-y-2">
-          <a
+          <Link
             href="/seller"
             className="flex items-center gap-3 px-4 py-2 bg-primary/10 text-primary rounded-lg font-medium"
           >
             <BarChart3 className="w-5 h-5" />
             Dashboard
-          </a>
-          <a
+          </Link>
+          <Link
             href="/seller/products"
             className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
           >
             <Package className="w-5 h-5" />
             Produits
-          </a>
-          <a
+          </Link>
+          <Link
             href="/seller/orders"
             className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
           >
             <ShoppingCart className="w-5 h-5" />
             Commandes
-          </a>
-          <a
+          </Link>
+          <Link
             href="/seller/analytics"
             className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
           >
             <TrendingUp className="w-5 h-5" />
             Statistiques
-          </a>
+          </Link>
         </nav>
 
         <div className="p-4 space-y-2 mt-auto">
-          <a
+          <Link
             href="/seller/settings"
             className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
           >
             <Settings className="w-5 h-5" />
             Paramètres
-          </a>
+          </Link>
           <button className="w-full flex items-center gap-3 px-4 py-2 text-destructive hover:bg-muted rounded-lg transition">
             <LogOut className="w-5 h-5" />
             <span>Déconnexion</span>
@@ -248,10 +249,12 @@ export default function SellerDashboard() {
                     {SELLER_PRODUCTS.map((product) => (
                       <tr key={product.id} className="border-b border-border hover:bg-muted/30 transition">
                         <td className="px-6 py-4 flex items-center gap-3">
-                          <img
+                          <Image
                             src={product.image || "/placeholder.svg"}
                             alt={product.name}
-                            className="w-10 h-10 rounded object-cover"
+                            width={40}
+                            height={40}
+                            className="h-10 w-10 rounded object-cover"
                           />
                           <div>
                             <p className="font-medium text-foreground">{product.name}</p>

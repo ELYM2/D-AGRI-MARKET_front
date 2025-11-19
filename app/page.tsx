@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Search, MapPin, ShoppingBag, Users, Leaf, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -76,11 +77,14 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="relative h-96 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl border border-primary/10 flex items-center justify-center">
-                <img
+              <div className="relative h-96 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl border border-primary/10 flex items-center justify-center overflow-hidden">
+                <Image
                   src="/fresh-vegetables-and-local-produce-market.jpg"
                   alt="Produits frais locaux"
-                  className="w-full h-full object-cover rounded-2xl"
+                  fill
+                  className="object-cover rounded-2xl"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
                 />
               </div>
             </div>

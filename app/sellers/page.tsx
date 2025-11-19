@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { MapPin, Star, Leaf, ShoppingBag, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -140,10 +141,12 @@ export default function SellersPage() {
             <Link key={seller.id} href={`/seller-profile/${seller.id}`}>
               <div className="bg-card rounded-lg border border-border overflow-hidden hover:border-primary/20 transition group">
                 <div className="relative h-48 bg-muted overflow-hidden">
-                  <img
+                  <Image
                     src={seller.image || "/placeholder.svg"}
                     alt={seller.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition"
+                    fill
+                    className="object-cover transition group-hover:scale-105"
+                    sizes="(max-width: 768px) 100vw, 50vw"
                   />
                 </div>
 

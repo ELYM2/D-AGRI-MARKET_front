@@ -2,13 +2,18 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { ArrowLeft, Eye, EyeOff, Leaf } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { showToast } from "@/components/toast-notification"
+import { changePassword } from "@/lib/auth"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function ChangePasswordPage() {
+  const router = useRouter()
+  const { me, loading } = useAuth()
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,
@@ -20,6 +25,12 @@ export default function ChangePasswordPage() {
     confirmPassword: "",
   })
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!loading && !me) {
+      router.replace("/auth/login")
+    }
+  }, [loading, me, router])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -44,15 +55,30 @@ export default function ChangePasswordPage() {
 
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      showToast("success", "Succès", "Votre mot de passe a été modifié avec succès")
+      await changePassword({
+        current_password: formData.currentPassword,
+        new_password: formData.newPassword,
+      })
+      showToast("success", "Succes", "Votre mot de passe a ete modifie avec succes")
       setFormData({ currentPassword: "", newPassword: "", confirmPassword: "" })
-    } catch (error) {
-      showToast("error", "Erreur", "Une erreur est survenue lors de la modification du mot de passe")
+    } catch (err) {
+      console.error(err)
+      showToast("error", "Erreur", "Impossible de modifier le mot de passe")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (!me && !loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 text-center space-y-4">
+        <h1 className="text-2xl font-bold">Connexion requise</h1>
+        <p className="text-muted-foreground">Connectez-vous pour mettre a jour votre mot de passe.</p>
+        <Button asChild>
+          <Link href="/auth/login">Se connecter</Link>
+        </Button>
+      </div>
+    )
   }
 
   return (

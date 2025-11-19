@@ -75,28 +75,28 @@ export default function SellerOrdersPage() {
         </div>
 
         <nav className="p-4 space-y-2">
-          <a href="/seller" className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg">
+          <Link href="/seller" className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg">
             Dashboard
-          </a>
-          <a
+          </Link>
+          <Link
             href="/seller/orders"
             className="flex items-center gap-3 px-4 py-2 bg-primary/10 text-primary rounded-lg font-medium"
           >
             <Package className="w-5 h-5" />
             Commandes
-          </a>
-          <a
+          </Link>
+          <Link
             href="/seller/analytics"
             className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg"
           >
             Statistiques
-          </a>
-          <a
+          </Link>
+          <Link
             href="/seller/settings"
             className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg"
           >
             Paramètres
-          </a>
+          </Link>
         </nav>
       </aside>
 

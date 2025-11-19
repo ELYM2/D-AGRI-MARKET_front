@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Star, MapPin, ShoppingBag, Leaf } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -19,10 +20,12 @@ export function ProductCard({ id, name, price, image, seller, rating, reviews, d
     <Link href={`/products/${id}`}>
       <div className="bg-card rounded-lg border border-border overflow-hidden hover:border-primary/20 transition group cursor-pointer h-full flex flex-col">
         <div className="relative overflow-hidden bg-muted h-48 flex items-center justify-center">
-          <img
+          <Image
             src={image || "/placeholder.svg"}
             alt={name}
-            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+            fill
+            className="object-cover transition duration-300 group-hover:scale-105"
+            sizes="(max-width: 1024px) 50vw, 33vw"
           />
           {fresh && (
             <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">

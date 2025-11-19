@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { MapPin, Phone, Mail, Globe, Star, Package, Users, Clock, Leaf } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -69,11 +70,14 @@ export default function SellerProfilePage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
-        <div className="relative -mx-4 sm:mx-0">
-          <img
+        <div className="relative -mx-4 sm:mx-0 h-64">
+          <Image
             src={SELLER_DETAILS.image || "/placeholder.svg"}
             alt={SELLER_DETAILS.name}
-            className="w-full h-64 object-cover rounded-lg"
+            fill
+            className="object-cover rounded-lg"
+            sizes="100vw"
+            priority
           />
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background to-transparent h-32 rounded-lg" />
         </div>
@@ -82,10 +86,12 @@ export default function SellerProfilePage() {
           <div className="md:col-span-2 space-y-8">
             <div className="flex items-start gap-6">
               <div className="w-24 h-24 rounded-lg bg-card border-4 border-background -mt-16 overflow-hidden flex-shrink-0">
-                <img
+                <Image
                   src={SELLER_DETAILS.logo || "/placeholder.svg"}
                   alt={SELLER_DETAILS.name}
-                  className="w-full h-full object-cover"
+                  width={96}
+                  height={96}
+                  className="h-full w-full object-cover"
                 />
               </div>
 
@@ -134,10 +140,12 @@ export default function SellerProfilePage() {
                     key={product.id}
                     className="bg-card rounded-lg border border-border overflow-hidden hover:border-primary/20 transition"
                   >
-                    <img
+                    <Image
                       src={product.image || "/placeholder.svg"}
                       alt={product.name}
-                      className="w-full h-40 object-cover"
+                      width={400}
+                      height={160}
+                      className="h-40 w-full object-cover"
                     />
                     <div className="p-4">
                       <h3 className="font-semibold text-foreground">{product.name}</h3>

@@ -7,11 +7,12 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Leaf, Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { login, getMe } from "@/lib/auth"
 import { showToast } from "@/components/toast-notification"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login: loginUser } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [pending, setPending] = useState(false)
   const [formData, setFormData] = useState({
@@ -31,12 +32,12 @@ export default function LoginPage() {
     e.preventDefault()
     try {
       setPending(true)
-      await login({ username: formData.username, password: formData.password })
-      const me = await getMe()
+      const me = await loginUser({ username: formData.username, password: formData.password })
       showToast("success", "Connexion reussie", `Bienvenue ${me?.username ?? ""}`)
       router.replace("/")
       router.refresh?.()
     } catch (err) {
+      console.error(err)
       showToast("error", "Echec de connexion", "Identifiants invalides")
     } finally {
       setPending(false)
@@ -102,7 +103,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 py-2" disabled={pending} isLoading={pending as any}>
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 py-2" disabled={pending} isLoading={pending}>
               Se connecter
             </Button>
           </form>

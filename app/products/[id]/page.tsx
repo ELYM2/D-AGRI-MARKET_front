@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Star, MapPin, ShoppingBag, Leaf, Heart, Share2, ArrowLeft, Truck, Shield, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -111,7 +112,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-card border-b border-border">
+      <header className="hidden">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -146,10 +147,12 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           {/* Product Image */}
           <div className="flex flex-col gap-4">
             <div className="relative overflow-hidden bg-muted rounded-lg h-96 flex items-center justify-center">
-              <img
+              <Image
                 src={product.image || "/placeholder.svg"}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
               />
               {product.fresh && (
                 <div className="absolute top-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2">

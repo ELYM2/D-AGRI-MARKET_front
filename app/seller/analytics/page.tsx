@@ -1,4 +1,5 @@
 "use client"
+import Link from "next/link"
 import { BarChart3, TrendingUp, DollarSign, Users, Package, ArrowUp, ArrowDown, Menu, X } from "lucide-react"
 import { useState } from "react"
 
@@ -33,28 +34,28 @@ export default function AnalyticsPage() {
         </div>
 
         <nav className="p-4 space-y-2">
-          <a href="/seller" className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg">
+          <Link href="/seller" className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg">
             Dashboard
-          </a>
-          <a
+          </Link>
+          <Link
             href="/seller/analytics"
             className="flex items-center gap-3 px-4 py-2 bg-primary/10 text-primary rounded-lg font-medium"
           >
             <BarChart3 className="w-5 h-5" />
             Statistiques
-          </a>
-          <a
+          </Link>
+          <Link
             href="/seller/orders"
             className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg"
           >
             Commandes
-          </a>
-          <a
+          </Link>
+          <Link
             href="/seller/settings"
             className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg"
           >
             Paramètres
-          </a>
+          </Link>
         </nav>
       </aside>
 
