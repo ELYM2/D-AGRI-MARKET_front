@@ -14,8 +14,24 @@ export async function register(payload: { username: string; email?: string; pass
     credentials: "include",
   });
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(JSON.stringify(errorData) || "Registration failed");
+    let errorMessage = "Registration failed";
+    try {
+      const errorData = await res.json();
+      // Handle Django REST Framework validation errors
+      if (errorData && typeof errorData === "object") {
+        const errors = Object.entries(errorData)
+          .map(([field, messages]) => {
+            const msgArray = Array.isArray(messages) ? messages : [messages];
+            return `${field}: ${msgArray.join(", ")}`;
+          })
+          .join("; ");
+        errorMessage = errors || errorMessage;
+      }
+    } catch {
+      // If JSON parsing fails, use status text
+      errorMessage = `Registration failed: ${res.status} ${res.statusText}`;
+    }
+    throw new Error(errorMessage);
   }
   const data = await res.json();
   dispatchAuthChange();
@@ -31,8 +47,22 @@ export async function login(payload: { username: string; password: string }) {
     credentials: "include",
   });
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(JSON.stringify(errorData) || "Login failed");
+    let errorMessage = "Login failed";
+    try {
+      const errorData = await res.json();
+      if (errorData && typeof errorData === "object") {
+        const errors = Object.entries(errorData)
+          .map(([field, messages]) => {
+            const msgArray = Array.isArray(messages) ? messages : [messages];
+            return `${field}: ${msgArray.join(", ")}`;
+          })
+          .join("; ");
+        errorMessage = errors || errorMessage;
+      }
+    } catch {
+      errorMessage = `Login failed: ${res.status} ${res.statusText}`;
+    }
+    throw new Error(errorMessage);
   }
   const data = await res.json();
   dispatchAuthChange();

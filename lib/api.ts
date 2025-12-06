@@ -23,7 +23,16 @@ async function apiCall(
     ...options,
   };
 
-  return fetch(url, defaultOptions);
+  try {
+    const response = await fetch(url, defaultOptions);
+    return response;
+  } catch (error) {
+    // Handle network errors (API unavailable, CORS issues, etc.)
+    if (error instanceof TypeError && error.message.includes("fetch")) {
+      throw new Error("Impossible de se connecter au serveur. Vérifiez que le backend est démarré.");
+    }
+    throw error;
+  }
 }
 
 // Health check
@@ -61,7 +70,17 @@ export async function getProducts(params?: {
     cache: "no-store",
   });
 
-  if (!res.ok) throw new Error("Failed to fetch products");
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = "Échec du chargement des produits";
+    try {
+      const errorData = JSON.parse(errorText);
+      errorMessage = errorData.detail || errorData.message || errorMessage;
+    } catch {
+      errorMessage = res.status === 404 ? "Produits non trouvés" : errorMessage;
+    }
+    throw new Error(errorMessage);
+  }
   return res.json();
 }
 
@@ -70,7 +89,20 @@ export async function getProduct(id: number) {
     cache: "no-store",
   });
 
-  if (!res.ok) throw new Error("Failed to fetch product");
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error("Produit non trouvé");
+    }
+    const errorText = await res.text();
+    let errorMessage = "Échec du chargement du produit";
+    try {
+      const errorData = JSON.parse(errorText);
+      errorMessage = errorData.detail || errorData.message || errorMessage;
+    } catch {
+      // Use default error message
+    }
+    throw new Error(errorMessage);
+  }
   return res.json();
 }
 
@@ -93,7 +125,17 @@ export async function getCategories() {
     cache: "no-store",
   });
 
-  if (!res.ok) throw new Error("Failed to fetch categories");
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = "Échec du chargement des catégories";
+    try {
+      const errorData = JSON.parse(errorText);
+      errorMessage = errorData.detail || errorData.message || errorMessage;
+    } catch {
+      // Use default error message
+    }
+    throw new Error(errorMessage);
+  }
   return res.json();
 }
 
@@ -103,7 +145,20 @@ export async function getCart() {
     cache: "no-store",
   });
 
-  if (!res.ok) throw new Error("Failed to fetch cart");
+  if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error("Vous devez être connecté pour voir votre panier");
+    }
+    const errorText = await res.text();
+    let errorMessage = "Échec du chargement du panier";
+    try {
+      const errorData = JSON.parse(errorText);
+      errorMessage = errorData.detail || errorData.message || errorMessage;
+    } catch {
+      // Use default error message
+    }
+    throw new Error(errorMessage);
+  }
   const data = await res.json();
   return Array.isArray(data) ? data[0] : data;
 }
