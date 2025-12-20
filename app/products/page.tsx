@@ -33,6 +33,7 @@ export default function ProductsPage() {
   const [priceRange, setPriceRange] = useState([0, 20])
   const [sortBy, setSortBy] = useState("popular")
   const [showFilters, setShowFilters] = useState(false)
+  const [promoOnly, setPromoOnly] = useState(false)
   const [apiProducts, setApiProducts] = useState<ApiProduct[] | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -61,6 +62,7 @@ export default function ProductsPage() {
         id: p.id,
         name: p.name,
         price: Number(p.price),
+        old_price: p.old_price ? Number(p.old_price) : undefined,
         rating: 0, // Default rating
         reviews: 0,
         image: p.images && p.images.length > 0 ? p.images[0].image : "/placeholder.svg",
@@ -119,6 +121,10 @@ export default function ProductsPage() {
     // Filter by price range
     result = result.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1])
 
+    if (promoOnly) {
+      result = result.filter((p) => p.old_price && p.old_price > p.price)
+    }
+
     // Sort
     if (sortBy === "price-low") {
       result.sort((a, b) => a.price - b.price)
@@ -129,7 +135,7 @@ export default function ProductsPage() {
     }
 
     return result
-  }, [searchQuery, selectedCategory, priceRange, sortBy, sourceProducts])
+  }, [searchQuery, selectedCategory, priceRange, sortBy, promoOnly, sourceProducts])
 
   return (
     <div className="min-h-screen bg-background">
@@ -165,6 +171,15 @@ export default function ProductsPage() {
             </div>
 
             <div className="flex items-center gap-2">
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={promoOnly}
+                  onChange={(e) => setPromoOnly(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-foreground">Promos seulement</span>
+              </label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -286,6 +301,7 @@ export default function ProductsPage() {
                 setSearchQuery("")
                 setSelectedCategory("Tous")
                 setPriceRange([0, 20])
+                setPromoOnly(false)
               }}
             >
               Réinitialiser
@@ -314,12 +330,19 @@ export default function ProductsPage() {
                         className="object-cover transition duration-300 group-hover:scale-105"
                         sizes="(max-width: 1024px) 50vw, 33vw"
                       />
-                      {product.fresh && (
-                        <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                          <Leaf className="w-3 h-3" />
-                          Frais
-                        </div>
-                      )}
+                      <div className="absolute top-3 right-3 flex flex-col items-end gap-2">
+                        {product.fresh && (
+                          <div className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                            <Leaf className="w-3 h-3" />
+                            Frais
+                          </div>
+                        )}
+                        {product.old_price && product.old_price > product.price && (
+                          <div className="bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-xs font-semibold">
+                            -{Math.round(((product.old_price - product.price) / product.old_price) * 100)}%
+                          </div>
+                        )}
+                      </div>
                       <button
                         onClick={(e) => handleToggleFavorite(e, product.id)}
                         className={`absolute top-3 left-3 p-2 rounded-full transition ${product.is_favorite
@@ -356,7 +379,14 @@ export default function ProductsPage() {
                       {/* Footer */}
                       <div className="flex items-center justify-between pt-3 border-t border-border">
                         <div>
-                          <p className="text-lg font-bold text-primary">{Number(product.price).toFixed(0)} FCFA</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-lg font-bold text-primary">{Number(product.price).toFixed(0)} FCFA</p>
+                            {product.old_price && product.old_price > product.price && (
+                              <p className="text-sm text-muted-foreground line-through">
+                                {Number(product.old_price).toFixed(0)} FCFA
+                              </p>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                             <MapPin className="w-3 h-3" />
                             {product.distance}km

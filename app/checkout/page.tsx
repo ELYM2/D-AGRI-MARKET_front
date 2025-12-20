@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, CheckCircle2, Leaf } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { showToast } from "@/components/toast-notification"
-import { getCart, createOrder } from "@/lib/api"
+import { getCart, createOrder, initiateMobilePayment } from "@/lib/api"
 
 type CheckoutStep = "shipping" | "payment" | "confirmation"
 
@@ -34,6 +34,7 @@ export default function CheckoutPage() {
     expiryDate: "",
     cvv: "",
     mobileMoneyNumber: "",
+    paymentReference: "",
   })
 
   useEffect(() => {
@@ -71,7 +72,19 @@ export default function CheckoutPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      // Simulate payment processing delay
+      // Simulate payment processing delay / MoMo-OM push
+      if (formData.paymentMethod === "om" || formData.paymentMethod === "momo") {
+        if (!formData.mobileMoneyNumber || formData.mobileMoneyNumber.length < 9) {
+          throw new Error("Numéro mobile money invalide")
+        }
+        showToast("info", "Validation en cours", "Confirmez le paiement sur votre téléphone.")
+        const payment = await initiateMobilePayment({
+          method: formData.paymentMethod as "momo" | "om",
+          amount: total,
+          phone: formData.mobileMoneyNumber,
+        })
+        setFormData((prev) => ({ ...prev, paymentReference: payment.reference }))
+      }
       await new Promise(resolve => setTimeout(resolve, 1500))
 
       // Create order in backend
@@ -435,6 +448,11 @@ export default function CheckoutPage() {
                   Merci pour votre achat. Vous recevrez bientôt un email de confirmation avec les détails de votre
                   commande et le suivi de livraison.
                 </p>
+                {formData.paymentReference && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-left text-sm">
+                    Référence paiement : <span className="font-semibold text-foreground">{formData.paymentReference}</span>
+                  </div>
+                )}
                 <div className="bg-muted p-4 rounded-lg text-left space-y-2">
                   <p className="text-sm text-muted-foreground">
                     Statut: <span className="font-semibold text-foreground">Payé</span>

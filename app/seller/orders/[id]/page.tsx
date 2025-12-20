@@ -1,29 +1,98 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, User, MapPin, Phone, Mail, Download, Printer } from "lucide-react"
+import { ArrowLeft, User, MapPin, Phone, Mail, Download, Printer, PackageCheck, Ban, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { getOrder, updateOrderStatus } from "@/lib/api"
+import { showToast } from "@/components/toast-notification"
 
-const ORDER_DETAIL = {
-  id: "ORD-001",
-  customer: { name: "Jean Dupont", email: "jean@email.com", phone: "+33 6 12 34 56 78" },
-  address: "123 Rue de la Paix, 75000 Paris",
-  date: "2025-01-16",
-  status: "delivered",
-  items: [
-    { id: 1, name: "Tomates biologiques", qty: 2, price: 4.5, subtotal: 9.0 },
-    { id: 2, name: "Carottes fraiches", qty: 1, price: 3.2, subtotal: 3.2 },
-    { id: 3, name: "Laitue biologique", qty: 1, price: 2.8, subtotal: 2.8 },
-  ],
-  subtotal: 15.0,
-  tax: 2.85,
-  shipping: 6.65,
-  total: 24.5,
+type OrderItem = {
+  id: number
+  product_name: string
+  quantity: number
+  price: number
+}
+
+type OrderDetail = {
+  id: number
+  order_number: string
+  user_name: string
+  status: "pending" | "processing" | "delivered" | "cancelled"
+  status_display: string
+  total_amount: number
+  shipping_address: string
+  shipping_city: string
+  shipping_postal_code: string
+  created_at: string
+  items: OrderItem[]
 }
 
 export default function OrderDetailPage() {
-  const [status, setStatus] = useState(ORDER_DETAIL.status)
+  const params = useParams()
+  const router = useRouter()
+  const orderId = Number(params?.id)
+
+  const [order, setOrder] = useState<OrderDetail | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState(false)
+  const [status, setStatus] = useState<OrderDetail["status"]>("pending")
+  const [reason, setReason] = useState("")
+
+  useEffect(() => {
+    if (!orderId) return
+
+    const loadOrder = async () => {
+      try {
+        setLoading(true)
+        const data = await getOrder(orderId)
+        setOrder(data)
+        setStatus(data.status)
+      } catch (error: any) {
+        console.error("Error loading order:", error)
+        showToast("error", "Erreur", error?.message || "Commande introuvable")
+        router.push("/seller/orders")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadOrder()
+  }, [orderId, router])
+
+  const subtotal = useMemo(() => {
+    if (!order?.items) return 0
+    return order.items.reduce((acc, item) => acc + Number(item.price) * Number(item.quantity), 0)
+  }, [order])
+
+  const handleStatusUpdate = async (newStatus: OrderDetail["status"]) => {
+    if (!order) return
+    try {
+      setUpdating(true)
+      const updated = await updateOrderStatus(order.id, newStatus, reason || undefined)
+      setOrder(updated)
+      setStatus(updated.status)
+      showToast("success", "Statut mis à jour", `Commande ${updated.order_number} → ${updated.status_display || updated.status}`)
+    } catch (error: any) {
+      showToast("error", "Erreur", error?.message || "Impossible de changer le statut")
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Chargement de la commande...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!order) return null
 
   return (
     <div className="min-h-screen bg-background">
@@ -51,16 +120,32 @@ export default function OrderDetailPage() {
         {/* Header */}
         <div className="bg-card rounded-lg border border-border p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-foreground">{ORDER_DETAIL.id}</h1>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="px-4 py-2 bg-input rounded-lg outline-none text-foreground border border-border"
-            >
-              <option value="pending">En attente</option>
-              <option value="processing">En cours</option>
-              <option value="delivered">Livré</option>
-            </select>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Commande</p>
+              <h1 className="text-3xl font-bold text-foreground">{order.order_number}</h1>
+              <p className="text-sm text-muted-foreground">Client : {order.user_name || "Inconnu"}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as OrderDetail["status"])}
+                className="px-4 py-2 bg-input rounded-lg outline-none text-foreground border border-border"
+                disabled={updating}
+              >
+                <option value="pending">En attente</option>
+                <option value="processing">En cours</option>
+                <option value="delivered">Livré</option>
+                <option value="cancelled">Annulée</option>
+              </select>
+              <Button
+                size="sm"
+                onClick={() => handleStatusUpdate(status)}
+                disabled={updating}
+                className="bg-primary hover:bg-primary/90"
+              >
+                Mettre à jour
+              </Button>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -69,19 +154,7 @@ export default function OrderDetailPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-muted-foreground" />
-                  <p className="text-foreground">{ORDER_DETAIL.customer.name}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-muted-foreground" />
-                  <a href={`mailto:${ORDER_DETAIL.customer.email}`} className="text-primary hover:underline">
-                    {ORDER_DETAIL.customer.email}
-                  </a>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  <a href={`tel:${ORDER_DETAIL.customer.phone}`} className="text-primary hover:underline">
-                    {ORDER_DETAIL.customer.phone}
-                  </a>
+                  <p className="text-foreground">{order.user_name || "Client"}</p>
                 </div>
               </div>
             </div>
@@ -90,9 +163,54 @@ export default function OrderDetailPage() {
               <h3 className="text-sm text-muted-foreground mb-3 font-medium">Adresse de livraison</h3>
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
-                <p className="text-foreground">{ORDER_DETAIL.address}</p>
+                <p className="text-foreground">
+                  {order.shipping_address}
+                  <br />
+                  {order.shipping_city} {order.shipping_postal_code}
+                </p>
               </div>
             </div>
+          </div>
+
+            <div className="flex flex-wrap gap-3">
+            {["processing", "delivered", "cancelled"].includes(status) && (
+              <div className="w-full md:w-1/2">
+                <label className="text-sm text-muted-foreground mb-1 block">Motif (optionnel, visible par l'acheteur)</label>
+                <input
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="ex: rupture sur 1 article, proposé un remplacement..."
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md outline-none text-foreground"
+                />
+              </div>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleStatusUpdate("processing")}
+              disabled={updating || order.status === "processing"}
+            >
+              <PackageCheck className="w-4 h-4 mr-2" />
+              Accepter / En cours
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleStatusUpdate("delivered")}
+              disabled={updating || order.status === "delivered"}
+            >
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+              Marquer livré
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => handleStatusUpdate("cancelled")}
+              disabled={updating || order.status === "cancelled"}
+            >
+              <Ban className="w-4 h-4 mr-2" />
+              Refuser / Annuler
+            </Button>
           </div>
         </div>
 
@@ -109,12 +227,14 @@ export default function OrderDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {ORDER_DETAIL.items.map((item) => (
+                {order.items?.map((item) => (
                   <tr key={item.id} className="border-b border-border hover:bg-muted/30 transition">
-                    <td className="px-6 py-4 text-foreground">{item.name}</td>
-                    <td className="px-6 py-4 text-foreground">{item.qty}</td>
-                    <td className="px-6 py-4 text-foreground">{item.price.toFixed(0)} FCFA</td>
-                    <td className="px-6 py-4 font-semibold text-foreground">{item.subtotal.toFixed(0)} FCFA</td>
+                    <td className="px-6 py-4 text-foreground">{item.product_name}</td>
+                    <td className="px-6 py-4 text-foreground">{item.quantity}</td>
+                    <td className="px-6 py-4 text-foreground">{Number(item.price).toFixed(0)} FCFA</td>
+                    <td className="px-6 py-4 font-semibold text-foreground">
+                      {(Number(item.price) * Number(item.quantity)).toFixed(0)} FCFA
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -127,19 +247,11 @@ export default function OrderDetailPage() {
           <div className="space-y-3 max-w-xs ml-auto">
             <div className="flex justify-between">
               <span className="text-foreground">Sous-total</span>
-              <span className="text-foreground">{ORDER_DETAIL.subtotal.toFixed(0)} FCFA</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-foreground">TVA (19%)</span>
-              <span className="text-foreground">{ORDER_DETAIL.tax.toFixed(0)} FCFA</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-foreground">Livraison</span>
-              <span className="text-foreground">{ORDER_DETAIL.shipping.toFixed(0)} FCFA</span>
+              <span className="text-foreground">{subtotal.toFixed(0)} FCFA</span>
             </div>
             <div className="border-t border-border pt-3 flex justify-between">
               <span className="font-bold text-foreground">Total</span>
-              <span className="text-lg font-bold text-primary">{ORDER_DETAIL.total.toFixed(0)} FCFA</span>
+              <span className="text-lg font-bold text-primary">{Number(order.total_amount || subtotal).toFixed(0)} FCFA</span>
             </div>
           </div>
         </div>

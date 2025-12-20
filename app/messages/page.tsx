@@ -12,9 +12,16 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true)
   const [selectedMessage, setSelectedMessage] = useState<any>(null)
   const [inbox, setInbox] = useState<"received" | "sent">("received")
+  const [replySubject, setReplySubject] = useState("")
+  const [replyBody, setReplyBody] = useState("")
+  const [sending, setSending] = useState(false)
 
   useEffect(() => {
     loadMessages()
+    // reset selection when switching boxes
+    setSelectedMessage(null)
+    setReplySubject("")
+    setReplyBody("")
   }, [inbox])
 
   const loadMessages = async () => {
@@ -32,6 +39,8 @@ export default function MessagesPage() {
 
   const handleSelectMessage = async (message: any) => {
     setSelectedMessage(message)
+    setReplySubject(message.subject?.startsWith("Re:") ? message.subject : `Re: ${message.subject || ""}`)
+    setReplyBody("")
     if (!message.is_read && inbox === "received") {
       try {
         await markMessageAsRead(message.id)
@@ -39,6 +48,31 @@ export default function MessagesPage() {
       } catch (error) {
         console.error("Error marking message as read:", error)
       }
+    }
+  }
+
+  const handleSendReply = async () => {
+    if (!selectedMessage) return
+    if (!replySubject.trim() || !replyBody.trim()) {
+      showToast("error", "Champs requis", "Sujet et message sont nécessaires")
+      return
+    }
+
+    try {
+      setSending(true)
+      await sendMessage({
+        receiver: inbox === "received" ? selectedMessage.sender : selectedMessage.receiver,
+        subject: replySubject.trim(),
+        body: replyBody.trim(),
+      })
+      showToast("success", "Message envoyé", "Votre réponse a été envoyée")
+      setReplyBody("")
+      loadMessages()
+    } catch (error: any) {
+      console.error("Error sending message:", error)
+      showToast("error", "Erreur", error?.message || "Impossible d'envoyer le message")
+    } finally {
+      setSending(false)
     }
   }
 
@@ -127,9 +161,9 @@ export default function MessagesPage() {
           </div>
 
           {/* Message Detail */}
-          <div className="lg:col-span-2 bg-card rounded-lg border border-border p-6">
+          <div className="lg:col-span-2 bg-card rounded-lg border border-border p-6 space-y-6">
             {selectedMessage ? (
-              <div>
+              <div className="space-y-6">
                 <div className="mb-6 pb-6 border-b border-border">
                   <h2 className="text-xl font-bold text-foreground mb-2">{selectedMessage.subject}</h2>
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -141,6 +175,28 @@ export default function MessagesPage() {
                 </div>
                 <div className="prose prose-sm max-w-none">
                   <p className="text-foreground whitespace-pre-wrap">{selectedMessage.body}</p>
+                </div>
+                <div className="border-t border-border pt-6 space-y-3">
+                  <h3 className="text-sm font-semibold text-foreground">Répondre</h3>
+                  <input
+                    value={replySubject}
+                    onChange={(e) => setReplySubject(e.target.value)}
+                    className="w-full px-3 py-2 bg-input border border-border rounded-md outline-none text-foreground"
+                    placeholder="Sujet"
+                  />
+                  <textarea
+                    value={replyBody}
+                    onChange={(e) => setReplyBody(e.target.value)}
+                    rows={4}
+                    className="w-full px-3 py-2 bg-input border border-border rounded-md outline-none text-foreground resize-none"
+                    placeholder="Votre réponse..."
+                  />
+                  <div className="flex justify-end">
+                    <Button size="sm" onClick={handleSendReply} disabled={sending}>
+                      <Send className="w-4 h-4 mr-2" />
+                      {sending ? "Envoi..." : "Envoyer"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : (

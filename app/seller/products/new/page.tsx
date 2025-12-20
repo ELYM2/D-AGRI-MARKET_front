@@ -18,6 +18,7 @@ export default function CreateProductPage() {
     name: "",
     description: "",
     price: "",
+    old_price: "",
     stock: "",
     category: "",
     fresh: true,
@@ -69,6 +70,7 @@ export default function CreateProductPage() {
       data.append("name", formData.name)
       data.append("description", formData.description)
       data.append("price", formData.price)
+      if (formData.old_price) data.append("old_price", formData.old_price)
       data.append("stock", formData.stock)
       if (formData.category) data.append("category", formData.category)
       data.append("fresh", formData.fresh.toString())
@@ -177,6 +179,20 @@ export default function CreateProductPage() {
                   step="0.01"
                   className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition"
                   placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Prix avant promo (optionnel)</label>
+                <input
+                  type="number"
+                  name="old_price"
+                  value={formData.old_price}
+                  onChange={handleInputChange}
+                  min="0"
+                  step="0.01"
+                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition"
+                  placeholder="Ancien prix"
                 />
               </div>
 

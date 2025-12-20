@@ -177,21 +177,20 @@ export async function getFavorites() {
 }
 
 export async function toggleFavorite(productId: number) {
-  // This function body seems incomplete or incorrect based on the provided snippet.
-  // Assuming it's meant to be a placeholder or a partial copy from another function.
-  // The 'quantity: number = 1)' part is syntactically incorrect here.
-  // For the sake of returning a syntactically correct file, I'm commenting out the problematic line
-  // and providing a minimal valid function body.
-  // If the intent was to add a favorite toggle, it would typically involve a POST/DELETE request
-  // to a /favorites endpoint.
-  const res = await apiCall(`/api/products/${productId}/toggle_favorite/`, {
+  const res = await apiCall("/api/favorites/toggle/", {
     method: "POST",
-    // body: JSON.stringify({ product_id: productId }), // Example body if needed
+    body: JSON.stringify({ product_id: productId }),
   });
 
   if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.error || "Failed to toggle favorite");
+    let message = "Failed to toggle favorite";
+    try {
+      const error = await res.json();
+      message = error.error || error.detail || message;
+    } catch {
+      // keep default message
+    }
+    throw new Error(message);
   }
   return res.json();
 }
@@ -251,6 +250,41 @@ export async function getOrders() {
   return res.json();
 }
 
+export async function getOrder(id: number) {
+  const res = await apiCall(`/api/orders/${id}/`, {
+    cache: "no-store",
+  })
+
+  if (!res.ok) {
+    const message = res.status === 404 ? "Commande introuvable" : "Failed to fetch order"
+    throw new Error(message)
+  }
+  return res.json()
+}
+
+export async function updateOrderStatus(
+  id: number,
+  status: "pending" | "processing" | "delivered" | "cancelled",
+  reason?: string
+) {
+  const res = await apiCall(`/api/orders/${id}/update_status/`, {
+    method: "POST",
+    body: JSON.stringify({ status, ...(reason ? { reason } : {}) }),
+  })
+
+  if (!res.ok) {
+    let message = "Impossible de mettre à jour le statut"
+    try {
+      const error = await res.json()
+      message = error.error || error.detail || message
+    } catch {
+      // keep default
+    }
+    throw new Error(message)
+  }
+  return res.json()
+}
+
 export async function createOrder(data: {
   shipping_address: string;
   shipping_city: string;
@@ -266,6 +300,75 @@ export async function createOrder(data: {
     throw new Error(error.error || "Failed to create order");
   }
   return res.json();
+}
+
+// Payments (simulated for MoMo / OM)
+export async function initiateMobilePayment(payload: { method: "momo" | "om"; amount: number; phone: string }) {
+  const res = await apiCall("/api/payments/mobile/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    let message = "Échec du paiement mobile"
+    try {
+      const error = await res.json()
+      message = error.detail || error.error || message
+    } catch {
+      // keep default
+    }
+    throw new Error(message)
+  }
+  return res.json()
+}
+
+// Seller product management
+export async function updateProduct(
+  id: number,
+  data: Partial<{
+    name: string
+    description: string
+    price: number
+    old_price: number
+    stock: number
+    category: number
+    is_active: boolean
+  }>
+) {
+  const res = await apiCall(`/api/products/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  })
+
+  if (!res.ok) {
+    let message = "Failed to update product"
+    try {
+      const error = await res.json()
+      message = error.detail || error.error || message
+    } catch {
+      // keep default message
+    }
+    throw new Error(message)
+  }
+  return res.json()
+}
+
+export async function deleteProduct(id: number) {
+  const res = await apiCall(`/api/products/${id}/`, {
+    method: "DELETE",
+  })
+
+  if (!res.ok) {
+    let message = "Failed to delete product"
+    try {
+      const error = await res.json()
+      message = error.detail || error.error || message
+    } catch {
+      // keep default message
+    }
+    throw new Error(message)
+  }
+  return true
 }
 
 // Seller API

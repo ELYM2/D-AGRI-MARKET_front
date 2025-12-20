@@ -1,42 +1,58 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { Menu, X, Eye, Package, Calendar } from "lucide-react"
+import { Menu, X, Eye, Package, Calendar, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { getOrders } from "@/lib/api"
+import { showToast } from "@/components/toast-notification"
 
-const ORDERS = [
-  {
-    id: "ORD-001",
-    customer: "Jean Dupont",
-    date: "2025-01-16",
-    items: 3,
-    total: 24.5,
-    status: "delivered",
-  },
-  {
-    id: "ORD-002",
-    customer: "Marie Martin",
-    date: "2025-01-16",
-    items: 2,
-    total: 15.8,
-    status: "processing",
-  },
-  {
-    id: "ORD-003",
-    customer: "Pierre Bernard",
-    date: "2025-01-15",
-    items: 5,
-    total: 48.9,
-    status: "pending",
-  },
-]
+type OrderItem = {
+  id: number
+  product_name: string
+  quantity: number
+  price: number
+}
+
+type Order = {
+  id: number
+  order_number: string
+  user_name: string
+  status: "pending" | "processing" | "delivered" | "cancelled"
+  status_display: string
+  total_amount: number
+  shipping_city: string
+  created_at: string
+  items: OrderItem[]
+}
 
 export default function SellerOrdersPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState("all")
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const filteredOrders = statusFilter === "all" ? ORDERS : ORDERS.filter((o) => o.status === statusFilter)
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        setLoading(true)
+        const data = await getOrders()
+        setOrders(Array.isArray(data) ? data : data?.results || [])
+      } catch (error: any) {
+        console.error("Erreur de chargement des commandes :", error)
+        showToast("error", "Erreur", error?.message || "Impossible de charger les commandes")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadOrders()
+  }, [])
+
+  const filteredOrders = useMemo(() => {
+    if (statusFilter === "all") return orders
+    return orders.filter((o) => o.status === statusFilter)
+  }, [orders, statusFilter])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -46,6 +62,8 @@ export default function SellerOrdersPage() {
         return "bg-blue-100 text-blue-800"
       case "pending":
         return "bg-yellow-100 text-yellow-800"
+      case "cancelled":
+        return "bg-red-100 text-red-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
@@ -55,10 +73,20 @@ export default function SellerOrdersPage() {
     switch (status) {
       case "delivered":
         return "Livré"
+      case "Livré":
+        return status
       case "processing":
         return "En cours"
+      case "En cours":
+        return status
       case "pending":
         return "En attente"
+      case "En attente":
+        return status
+      case "cancelled":
+        return "Annulée"
+      case "Annulée":
+        return status
       default:
         return status
     }
@@ -110,7 +138,7 @@ export default function SellerOrdersPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {["all", "pending", "processing", "delivered"].map((status) => (
+            {["all", "pending", "processing", "delivered", "cancelled"].map((status) => (
               <Button
                 key={status}
                 size="sm"
@@ -123,46 +151,76 @@ export default function SellerOrdersPage() {
                     ? "Attente"
                     : status === "processing"
                       ? "Cours"
-                      : "Livrés"}
+                      : status === "delivered"
+                        ? "Livrés"
+                        : "Annulées"}
               </Button>
             ))}
           </div>
         </header>
 
         <main className="flex-1 overflow-auto p-6">
-          <div className="space-y-3">
-            {filteredOrders.map((order) => (
-              <Link key={order.id} href={`/seller/orders/${order.id}`}>
-                <div className="bg-card p-4 rounded-lg border border-border hover:border-primary/20 transition cursor-pointer">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-bold text-foreground">{order.id}</p>
-                      <p className="text-sm text-muted-foreground">{order.customer}</p>
-                      <p className="text-sm text-foreground mt-1">{order.items} article(s)</p>
-                    </div>
-
-                    <div className="flex items-center gap-4">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <span>Chargement des commandes...</span>
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+              <AlertCircle className="w-6 h-6" />
+              <span>Aucune commande pour ce filtre.</span>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredOrders.map((order) => (
+                <Link key={order.id} href={`/seller/orders/${order.id}`}>
+                  <div className="bg-card p-4 rounded-lg border border-border hover:border-primary/20 transition cursor-pointer">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-lg font-bold text-primary">{order.total.toFixed(0)} FCFA</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {order.date}
+                        <p className="font-bold text-foreground">{order.order_number}</p>
+                        <p className="text-sm text-muted-foreground">Client : {order.user_name || "Inconnu"}</p>
+                        <p className="text-sm text-foreground mt-1">
+                          {(order.items?.reduce((acc, item) => acc + (item.quantity || 0), 0) ?? 0)} article(s)
                         </p>
                       </div>
 
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                        {getStatusLabel(order.status)}
-                      </span>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-primary">
+                            {Number(order.total_amount || 0).toFixed(0)} FCFA
+                          </p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
+                            <Calendar className="w-3 h-3" />
+                            {order.created_at ? new Date(order.created_at).toLocaleDateString() : "-"}
+                          </p>
+                        </div>
 
-                      <Button size="sm" variant="ghost">
-                        <Eye className="w-4 h-4" />
-                      </Button>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                          {getStatusLabel(order.status_display || order.status)}
+                        </span>
+
+                        <Button size="sm" variant="ghost">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
+
+                    {order.items && order.items.length > 0 && (
+                      <div className="mt-4 flex flex-wrap gap-3 text-sm text-muted-foreground">
+                        {order.items.slice(0, 3).map((item) => (
+                          <span key={item.id} className="px-2 py-1 bg-muted rounded-md">
+                            {item.quantity}x {item.product_name}
+                          </span>
+                        ))}
+                        {order.items.length > 3 && (
+                          <span className="px-2 py-1 bg-muted rounded-md">+{order.items.length - 3} autres</span>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </main>
       </div>
     </div>

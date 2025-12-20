@@ -17,6 +17,9 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ id, name, price, old_price, image, seller, rating, reviews, distance, fresh }: ProductCardProps) {
+  const hasDiscount = Boolean(old_price && old_price > price)
+  const discountPercent = hasDiscount ? Math.round(((old_price! - price) / old_price!) * 100) : null
+
   return (
     <Link href={`/products/${id}`}>
       <div className="bg-card rounded-lg border border-border overflow-hidden hover:border-primary/20 transition group cursor-pointer h-full flex flex-col">
@@ -28,12 +31,19 @@ export function ProductCard({ id, name, price, old_price, image, seller, rating,
             className="object-cover transition duration-300 group-hover:scale-105"
             sizes="(max-width: 1024px) 50vw, 33vw"
           />
-          {fresh && (
-            <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-              <Leaf className="w-3 h-3" />
-              Frais
-            </div>
-          )}
+          <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+            {fresh && (
+              <div className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                <Leaf className="w-3 h-3" />
+                Frais
+              </div>
+            )}
+            {hasDiscount && (
+              <div className="bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-xs font-semibold">
+                -{discountPercent}%
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="p-4 flex-1 flex flex-col">
@@ -57,9 +67,9 @@ export function ProductCard({ id, name, price, old_price, image, seller, rating,
           <div className="flex items-center justify-between pt-3 border-t border-border">
             <div>
               <div className="flex items-center gap-2">
-                <p className="text-lg font-bold text-primary">${price.toFixed(2)}</p>
-                {old_price && old_price > price && (
-                  <p className="text-sm text-muted-foreground line-through">${old_price.toFixed(2)}</p>
+                <p className="text-lg font-bold text-primary">{price.toFixed(0)} FCFA</p>
+                {hasDiscount && (
+                  <p className="text-sm text-muted-foreground line-through">{old_price?.toFixed(0)} FCFA</p>
                 )}
               </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">

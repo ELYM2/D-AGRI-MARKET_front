@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { BarChart3, Package, ShoppingCart, Users, TrendingUp, Plus, Eye, Edit, Trash2, Leaf } from "lucide-react"
+import { BarChart3, Package, ShoppingCart, Users, TrendingUp, Plus, Eye, Edit, Trash2, Leaf, PauseCircle, PlayCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getSellerStats, getProducts } from "@/lib/api"
+import { getSellerStats, getProducts, updateProduct, deleteProduct } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
@@ -38,6 +38,29 @@ export default function SellerDashboard() {
       showToast("error", "Erreur", "Impossible de charger le tableau de bord")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleToggleActive = async (product: any) => {
+    try {
+      const updated = await updateProduct(product.id, { is_active: !product.is_active })
+      setProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, ...updated } : p)))
+      showToast("success", "Produit mis à jour", updated.is_active ? "Le produit est actif" : "Le produit est en pause")
+    } catch (error: any) {
+      showToast("error", "Erreur", error?.message || "Impossible de mettre à jour le produit")
+    }
+  }
+
+  const handleDelete = async (productId: number) => {
+    const confirmed = window.confirm("Supprimer ce produit ? Cette action est irréversible.")
+    if (!confirmed) return
+
+    try {
+      await deleteProduct(productId)
+      setProducts((prev) => prev.filter((p) => p.id !== productId))
+      showToast("success", "Produit supprimé", "Le produit a été retiré")
+    } catch (error: any) {
+      showToast("error", "Erreur", error?.message || "Impossible de supprimer le produit")
     }
   }
 
@@ -162,7 +185,16 @@ export default function SellerDashboard() {
                         </div>
                       </td>
                       <td className="py-3 px-4 text-sm text-muted-foreground">{product.category_name}</td>
-                      <td className="py-3 px-4 text-sm font-medium text-foreground">{Number(product.price).toFixed(0)} FCFA</td>
+                      <td className="py-3 px-4 text-sm font-medium text-foreground">
+                        <div className="flex items-center gap-2">
+                          <span>{Number(product.price).toFixed(0)} FCFA</span>
+                          {product.old_price && Number(product.old_price) > Number(product.price) && (
+                            <span className="text-xs text-muted-foreground line-through">
+                              {Number(product.old_price).toFixed(0)} FCFA
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-3 px-4">
                         <span className={`text-sm ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {product.stock}
@@ -174,17 +206,37 @@ export default function SellerDashboard() {
                           {product.is_active ? 'Actif' : 'Inactif'}
                         </span>
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link href={`/products/${product.id}`}>
-                            <Button variant="ghost" size="sm">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  <td className="py-3 px-4">
+                    <div className="flex items-center justify-end gap-2">
+                      <Link href={`/products/${product.id}`}>
+                        <Button variant="ghost" size="sm">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </Link>
+                      <Link href={`/seller/products/${product.id}`}>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleActive(product)}
+                        title={product.is_active ? "Mettre en pause" : "Activer"}
+                      >
+                        {product.is_active ? (
+                          <PauseCircle className="w-4 h-4 text-yellow-600" />
+                        ) : (
+                          <PlayCircle className="w-4 h-4 text-green-600" />
+                        )}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(product.id)}>
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
                 </tbody>
               </table>
             </div>
