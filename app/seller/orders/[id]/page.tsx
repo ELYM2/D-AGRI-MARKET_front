@@ -113,8 +113,8 @@ export default function OrderDetailPage() {
                   <tr key={item.id} className="border-b border-border hover:bg-muted/30 transition">
                     <td className="px-6 py-4 text-foreground">{item.name}</td>
                     <td className="px-6 py-4 text-foreground">{item.qty}</td>
-                    <td className="px-6 py-4 text-foreground">${item.price.toFixed(2)}</td>
-                    <td className="px-6 py-4 font-semibold text-foreground">${item.subtotal.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-foreground">{item.price.toFixed(0)} FCFA</td>
+                    <td className="px-6 py-4 font-semibold text-foreground">{item.subtotal.toFixed(0)} FCFA</td>
                   </tr>
                 ))}
               </tbody>
@@ -127,19 +127,19 @@ export default function OrderDetailPage() {
           <div className="space-y-3 max-w-xs ml-auto">
             <div className="flex justify-between">
               <span className="text-foreground">Sous-total</span>
-              <span className="text-foreground">${ORDER_DETAIL.subtotal.toFixed(2)}</span>
+              <span className="text-foreground">{ORDER_DETAIL.subtotal.toFixed(0)} FCFA</span>
             </div>
             <div className="flex justify-between">
               <span className="text-foreground">TVA (19%)</span>
-              <span className="text-foreground">${ORDER_DETAIL.tax.toFixed(2)}</span>
+              <span className="text-foreground">{ORDER_DETAIL.tax.toFixed(0)} FCFA</span>
             </div>
             <div className="flex justify-between">
               <span className="text-foreground">Livraison</span>
-              <span className="text-foreground">${ORDER_DETAIL.shipping.toFixed(2)}</span>
+              <span className="text-foreground">{ORDER_DETAIL.shipping.toFixed(0)} FCFA</span>
             </div>
             <div className="border-t border-border pt-3 flex justify-between">
               <span className="font-bold text-foreground">Total</span>
-              <span className="text-lg font-bold text-primary">${ORDER_DETAIL.total.toFixed(2)}</span>
+              <span className="text-lg font-bold text-primary">{ORDER_DETAIL.total.toFixed(0)} FCFA</span>
             </div>
           </div>
         </div>

@@ -18,15 +18,17 @@ export default function SellerDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadDashboard()
-  }, [])
+    if (user) {
+      loadDashboard()
+    }
+  }, [user])
 
   const loadDashboard = async () => {
     try {
       setLoading(true)
       const [statsData, productsData] = await Promise.all([
         getSellerStats().catch(() => ({ total_sales: 0, total_orders: 0, total_products: 0, total_customers: 0 })),
-        getProducts().catch(() => ({ results: [] }))
+        user?.id ? getProducts({ owner: user.id }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] })
       ])
 
       setStats(statsData)
@@ -51,7 +53,7 @@ export default function SellerDashboard() {
   }
 
   const statsCards = [
-    { label: "Ventes ce mois", value: `$${stats?.total_sales || 0}`, icon: TrendingUp },
+    { label: "Ventes ce mois", value: `${stats?.total_sales || 0} FCFA`, icon: TrendingUp },
     { label: "Commandes", value: stats?.total_orders || 0, icon: ShoppingCart },
     { label: "Produits", value: stats?.total_products || products.length, icon: Package },
     { label: "Clients", value: stats?.total_customers || 0, icon: Users },
@@ -70,6 +72,11 @@ export default function SellerDashboard() {
           </Link>
 
           <div className="flex items-center gap-2">
+            <Link href="/">
+              <Button variant="ghost">
+                Retour à l'accueil
+              </Button>
+            </Link>
             <Link href="/seller/products/new">
               <Button className="bg-primary hover:bg-primary/90">
                 <Plus className="w-4 h-4 mr-2" />
@@ -155,7 +162,7 @@ export default function SellerDashboard() {
                         </div>
                       </td>
                       <td className="py-3 px-4 text-sm text-muted-foreground">{product.category_name}</td>
-                      <td className="py-3 px-4 text-sm font-medium text-foreground">${Number(product.price).toFixed(2)}</td>
+                      <td className="py-3 px-4 text-sm font-medium text-foreground">{Number(product.price).toFixed(0)} FCFA</td>
                       <td className="py-3 px-4">
                         <span className={`text-sm ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {product.stock}

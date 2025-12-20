@@ -3,6 +3,24 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Polices système modernes - Alternative à Google Fonts */
+@layer base {
+  :root {
+    --font-sans: 
+      -apple-system, 
+      BlinkMacSystemFont, 
+      "Segoe UI", 
+      "Roboto", 
+      "Oxygen", 
+      "Ubuntu", 
+      "Cantarell", 
+      "Fira Sans", 
+      "Droid Sans", 
+      "Helvetica Neue", 
+      sans-serif;
+  }
+}
+
 /* Updated theme with modern green palette for food marketplace */
 :root {
   --background: oklch(0.98 0.01 142.5);

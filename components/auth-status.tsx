@@ -42,6 +42,11 @@ export default function AuthStatus() {
       <Button asChild variant="ghost">
         <Link href="/account">Mon compte</Link>
       </Button>
+      {me.is_seller && (
+        <Button asChild variant="ghost" className="text-primary">
+          <Link href="/seller">Espace Vendeur</Link>
+        </Button>
+      )}
       <Button onClick={onLogout} isLoading={pending} variant="outline">Se deconnecter</Button>
     </div>
   )

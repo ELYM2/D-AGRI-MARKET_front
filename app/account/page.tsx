@@ -7,46 +7,27 @@ import { User, Heart, Settings, LogOut, MapPin, Phone, Mail, Edit2, Leaf, Bell, 
 import { Button } from "@/components/ui/button"
 import { showToast } from "@/components/toast-notification"
 import { useAuth } from "@/hooks/use-auth"
+import { getFavorites, getOrders } from "@/lib/api"
 
 type AccountTab = "profile" | "orders" | "favorites" | "preferences"
 
-interface Order {
-  id: string
-  date: string
-  items: string[]
-  total: number
-  status: "delivered" | "processing" | "pending"
+interface OrderItem {
+  id: number
+  product_name: string
+  quantity: number
+  price: number
 }
 
-const MOCK_ORDERS: Order[] = [
-  {
-    id: "ORD-2025-001",
-    date: "2025-01-15",
-    items: ["Tomates biologiques (x2)", "Carottes fraiches"],
-    total: 19.7,
-    status: "delivered",
-  },
-  {
-    id: "ORD-2025-002",
-    date: "2025-01-16",
-    items: ["Fromage fermier", "Miel naturel"],
-    total: 20.5,
-    status: "processing",
-  },
-  {
-    id: "ORD-2025-003",
-    date: "2025-01-17",
-    items: ["Pommes de saison", "Œufs fermiers"],
-    total: 12.49,
-    status: "pending",
-  },
-]
+interface Order {
+  id: number
+  order_number: string
+  created_at: string
+  items: OrderItem[]
+  total_amount: number
+  status: string
+  status_display: string
+}
 
-const MOCK_FAVORITES = [
-  { id: 1, name: "Tomates biologiques", seller: "Ferme du soleil", price: 4.5 },
-  { id: 2, name: "Fromage fermier", seller: "Laiterie locale", price: 12.0 },
-  { id: 3, name: "Miel naturel", seller: "Ruches locales", price: 8.5 },
-]
 
 export default function AccountPage() {
   const router = useRouter()
@@ -64,6 +45,41 @@ export default function AccountPage() {
   })
   const [logoutPending, setLogoutPending] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
+  const [favorites, setFavorites] = useState<any[]>([])
+  const [orders, setOrders] = useState<any[]>([])
+  const [loadingData, setLoadingData] = useState(false)
+
+  useEffect(() => {
+    if (activeTab === "favorites") {
+      loadFavorites()
+    } else if (activeTab === "orders") {
+      loadOrders()
+    }
+  }, [activeTab])
+
+  const loadFavorites = async () => {
+    try {
+      setLoadingData(true)
+      const data = await getFavorites()
+      setFavorites(data.results || data)
+    } catch (error) {
+      console.error("Error loading favorites:", error)
+    } finally {
+      setLoadingData(false)
+    }
+  }
+
+  const loadOrders = async () => {
+    try {
+      setLoadingData(true)
+      const data = await getOrders()
+      setOrders(data.results || data)
+    } catch (error) {
+      console.error("Error loading orders:", error)
+    } finally {
+      setLoadingData(false)
+    }
+  }
 
   useEffect(() => {
     if (me) {
@@ -126,19 +142,6 @@ export default function AccountPage() {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "delivered":
-        return "bg-green-100 text-green-800"
-      case "processing":
-        return "bg-blue-100 text-blue-800"
-      case "pending":
-        return "bg-yellow-100 text-yellow-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "delivered":
@@ -149,6 +152,19 @@ export default function AccountPage() {
         return "En attente"
       default:
         return status
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "delivered":
+        return "bg-green-100 text-green-800"
+      case "processing":
+        return "bg-blue-100 text-blue-800"
+      case "pending":
+        return "bg-yellow-100 text-yellow-800"
+      default:
+        return "bg-gray-100 text-gray-800"
     }
   }
 
@@ -396,28 +412,48 @@ export default function AccountPage() {
                 <h2 className="text-2xl font-bold text-foreground mb-6">Mes commandes</h2>
 
                 <div className="space-y-4">
-                  {MOCK_ORDERS.map((order) => (
-                    <Link key={order.id} href={`/account/orders/${order.id}`}>
-                      <div className="flex items-center justify-between p-4 border border-border rounded-lg hover:border-primary/20 transition cursor-pointer group">
-                        <div className="flex-1">
-                          <p className="font-semibold text-foreground group-hover:text-primary transition">
-                            {order.id}
-                          </p>
-                          <p className="text-sm text-muted-foreground mt-1">{order.date}</p>
-                          <p className="text-sm text-foreground mt-2">{order.items.length} article(s)</p>
-                        </div>
+                  {loadingData ? (
+                    <div className="text-center py-8">Chargement...</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {orders.map((order) => (
+                        <div
+                          key={order.id}
+                          className="flex items-center justify-between p-4 border border-border rounded-lg hover:border-primary/20 transition"
+                        >
+                          <div className="flex-1">
+                            <p className="font-semibold text-foreground group-hover:text-primary transition">
+                              #{order.order_number}
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {new Date(order.created_at).toLocaleDateString()}
+                            </p>
+                            <p className="text-sm text-foreground mt-2">
+                              {order.items.length} article(s) : {order.items.map((i: OrderItem) => i.product_name).join(", ")}
+                            </p>
+                          </div>
 
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-primary">${order.total.toFixed(2)}</p>
-                          <span
-                            className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-2 ${getStatusColor(order.status)}`}
-                          >
-                            {getStatusLabel(order.status)}
-                          </span>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-primary">${Number(order.total_amount).toFixed(2)}</p>
+                            <span
+                              className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-2 ${getStatusColor(order.status)}`}
+                            >
+                              {order.status_display}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
+                      ))}
+                    </div>
+                  )}
+
+                  {!loadingData && orders.length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">Aucune commande pour le moment</p>
+                      <Button variant="link" asChild className="mt-2">
+                        <Link href="/products">Commencer mes achats</Link>
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -427,31 +463,40 @@ export default function AccountPage() {
               <div className="bg-card rounded-lg border border-border p-6">
                 <h2 className="text-2xl font-bold text-foreground mb-6">Mes favoris</h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {MOCK_FAVORITES.map((product) => (
-                    <div
-                      key={product.id}
-                      className="flex items-center justify-between p-4 border border-border rounded-lg hover:border-primary/20 transition"
-                    >
-                      <div className="flex-1">
-                        <p className="font-semibold text-foreground">{product.name}</p>
-                        <p className="text-sm text-muted-foreground">{product.seller}</p>
-                      </div>
+                {loadingData ? (
+                  <div className="text-center py-8">Chargement...</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {favorites.map((fav) => (
+                      <div
+                        key={fav.id}
+                        className="flex items-center justify-between p-4 border border-border rounded-lg hover:border-primary/20 transition"
+                      >
+                        <div className="flex-1">
+                          <Link href={`/products/${fav.product.id}`} className="hover:underline">
+                            <p className="font-semibold text-foreground">{fav.product.name}</p>
+                          </Link>
+                          <p className="text-sm text-muted-foreground">{fav.product.owner_name || "Vendeur"}</p>
+                        </div>
 
-                      <div className="text-right">
-                        <p className="font-bold text-primary">${product.price.toFixed(2)}</p>
-                        <Button size="sm" className="mt-2 bg-primary hover:bg-primary/90">
-                          Ajouter
-                        </Button>
+                        <div className="text-right">
+                          <p className="font-bold text-primary">${Number(fav.product.price).toFixed(2)}</p>
+                          <Button size="sm" className="mt-2 bg-primary hover:bg-primary/90" asChild>
+                            <Link href={`/products/${fav.product.id}`}>Voir</Link>
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
 
-                {MOCK_FAVORITES.length === 0 && (
+                {!loadingData && favorites.length === 0 && (
                   <div className="text-center py-8">
                     <Heart className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                     <p className="text-muted-foreground">Aucun favori pour le moment</p>
+                    <Button variant="link" asChild className="mt-2">
+                      <Link href="/products">Découvrir des produits</Link>
+                    </Button>
                   </div>
                 )}
               </div>

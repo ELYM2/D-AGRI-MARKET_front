@@ -7,10 +7,10 @@ export default function AnalyticsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const stats = [
-    { label: "Ventes totales", value: "$8,450", change: "+24%", icon: DollarSign, positive: true },
+    { label: "Ventes totales", value: "8,450 FCFA", change: "+24%", icon: DollarSign, positive: true },
     { label: "Commandes", value: "156", change: "+12%", icon: Package, positive: true },
     { label: "Clients", value: "89", change: "+8%", icon: Users, positive: true },
-    { label: "Panier moyen", value: "$54.20", change: "+3%", icon: TrendingUp, positive: true },
+    { label: "Panier moyen", value: "54.20 FCFA", change: "+3%", icon: TrendingUp, positive: true },
   ]
 
   const monthlyData = [
@@ -136,9 +136,9 @@ export default function AnalyticsPage() {
             <h3 className="text-lg font-bold text-foreground mb-4">Meilleurs produits</h3>
             <div className="space-y-3">
               {[
-                { name: "Tomates biologiques", sales: 145, revenue: "$652.50" },
-                { name: "Laitue biologique", sales: 98, revenue: "$274.40" },
-                { name: "Carottes fraiches", sales: 87, revenue: "$278.40" },
+                { name: "Tomates biologiques", sales: 145, revenue: "652.50 FCFA" },
+                { name: "Laitue biologique", sales: 98, revenue: "274.40 FCFA" },
+                { name: "Carottes fraiches", sales: 87, revenue: "278.40 FCFA" },
               ].map((p) => (
                 <div key={p.name} className="flex items-center justify-between p-3 border border-border rounded-lg">
                   <div>

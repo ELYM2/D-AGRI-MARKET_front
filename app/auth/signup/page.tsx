@@ -52,7 +52,13 @@ export default function SignupPage() {
 
     try {
       setPending(true)
-      await register({ username: formData.username, email: formData.email, password: formData.password })
+      await register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+      })
       const me = await reload()
       showToast("success", "Inscription réussie", `Bienvenue ${me?.username ?? ""}`)
       router.replace("/")

@@ -3,108 +3,12 @@
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Search, MapPin, Filter, ShoppingBag, Star, Leaf } from "lucide-react"
+import { Search, MapPin, Filter, ShoppingBag, Star, Leaf, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
+import { getProducts, toggleFavorite } from "@/lib/api"
+import { showToast } from "@/components/toast-notification"
+import { useAuth } from "@/hooks/use-auth"
 
-const MOCK_PRODUCTS = [
-  {
-    id: 1,
-    name: "Tomates biologiques",
-    price: 4.5,
-    image: "/tomates-biologiques.jpg",
-    seller: "Ferme du soleil",
-    category: "Légumes",
-    rating: 4.8,
-    reviews: 145,
-    distance: 2.3,
-    fresh: true,
-  },
-  {
-    id: 2,
-    name: "Carottes fraiches",
-    price: 3.2,
-    image: "/carottes-fraiches.jpg",
-    seller: "Potager bio",
-    category: "Légumes",
-    rating: 4.9,
-    reviews: 89,
-    distance: 1.8,
-    fresh: true,
-  },
-  {
-    id: 3,
-    name: "Fromage fermier",
-    price: 12.0,
-    image: "/fromage-fermier.jpg",
-    seller: "Laiterie locale",
-    category: "Produits laitiers",
-    rating: 4.7,
-    reviews: 234,
-    distance: 3.5,
-    fresh: true,
-  },
-  {
-    id: 4,
-    name: "Miel naturel",
-    price: 8.5,
-    image: "/miel-naturel.jpg",
-    seller: "Ruches locales",
-    category: "Produits apicoles",
-    rating: 4.9,
-    reviews: 156,
-    distance: 4.2,
-    fresh: false,
-  },
-  {
-    id: 5,
-    name: "Laitue biologique",
-    price: 2.8,
-    image: "/laitue-biologique.jpg",
-    seller: "Ferme du soleil",
-    category: "Légumes",
-    rating: 4.6,
-    reviews: 67,
-    distance: 2.3,
-    fresh: true,
-  },
-  {
-    id: 6,
-    name: "Pommes de saison",
-    price: 5.99,
-    image: "/pommes-saison.jpg",
-    seller: "Verger traditionnels",
-    category: "Fruits",
-    rating: 4.8,
-    reviews: 312,
-    distance: 3.1,
-    fresh: true,
-  },
-  {
-    id: 7,
-    name: "Oeufs fermiers",
-    price: 6.5,
-    image: "/oeufs-fermiers.jpg",
-    seller: "Ferme Dupont",
-    category: "Œufs & Volaille",
-    rating: 4.9,
-    reviews: 201,
-    distance: 2.9,
-    fresh: true,
-  },
-  {
-    id: 8,
-    name: "Yaourt maison",
-    price: 4.2,
-    image: "/yaourt-maison.jpg",
-    seller: "Laiterie locale",
-    category: "Produits laitiers",
-    rating: 4.7,
-    reviews: 98,
-    distance: 3.5,
-    fresh: true,
-  },
-]
 
 const CATEGORIES = ["Tous", "Légumes", "Fruits", "Produits laitiers", "Œufs & Volaille", "Produits apicoles"]
 
@@ -115,10 +19,15 @@ type ApiProduct = {
   price: number | string
   stock?: number
   category?: number
+  category_name?: string
   owner?: number
+  owner_name?: string
+  is_favorite?: boolean
+  images?: { image: string }[]
 }
 
 export default function ProductsPage() {
+  const { me } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("Tous")
   const [priceRange, setPriceRange] = useState([0, 20])
@@ -132,9 +41,7 @@ export default function ProductsPage() {
     async function load() {
       try {
         setLoading(true)
-        const res = await fetch(`${baseUrl}/api/products/`, { cache: "no-store" })
-        if (!res.ok) throw new Error("Failed to load products")
-        const data = await res.json()
+        const data = await getProducts()
         if (!cancelled) setApiProducts(Array.isArray(data?.results) ? data.results : data)
       } catch {
         if (!cancelled) setApiProducts(null)
@@ -153,18 +60,44 @@ export default function ProductsPage() {
       return apiProducts.map((p) => ({
         id: p.id,
         name: p.name,
-        price: typeof p.price === "string" ? Number.parseFloat(p.price) : (p.price ?? 0),
-        image: "/placeholder.svg",
-        seller: p.owner ? `Vendeur #${p.owner}` : "Vendeur",
-        category: "Tous",
-        rating: 4.5,
+        price: Number(p.price),
+        rating: 0, // Default rating
         reviews: 0,
-        distance: 0,
+        image: p.images && p.images.length > 0 ? p.images[0].image : "/placeholder.svg",
+        category: p.category_name || "Divers",
+        seller: p.owner_name || "Vendeur",
+        distance: "0 km",
         fresh: true,
+        is_favorite: p.is_favorite || false,
       }))
     }
-    return MOCK_PRODUCTS
+    return []
   }, [apiProducts])
+
+  const handleToggleFavorite = async (e: React.MouseEvent, productId: number) => {
+    e.preventDefault() // Prevent navigation
+    e.stopPropagation()
+
+    if (!me) {
+      showToast("error", "Connexion requise", "Veuillez vous connecter pour ajouter aux favoris")
+      return
+    }
+
+    try {
+      const res = await toggleFavorite(productId)
+
+      // Update local state
+      if (apiProducts) {
+        setApiProducts(apiProducts.map(p =>
+          p.id === productId ? { ...p, is_favorite: res.is_favorite } : p
+        ))
+      }
+
+      showToast("success", "Favoris", res.is_favorite ? "Ajouté aux favoris" : "Retiré des favoris")
+    } catch (error) {
+      showToast("error", "Erreur", "Impossible de modifier les favoris")
+    }
+  }
 
   const filteredProducts = useMemo(() => {
     let result = sourceProducts
@@ -200,6 +133,19 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-40 bg-card border-b border-border">
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <Leaf className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-bold text-foreground">D-AGRI MARKET</span>
+          </Link>
+          <Link href="/">
+            <Button variant="ghost">Retour à l'accueil</Button>
+          </Link>
+        </nav>
+      </header>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading && (
           <div className="text-sm text-muted-foreground mb-4">Chargement des produits…</div>
@@ -260,7 +206,7 @@ export default function ProductsPage() {
 
               <div>
                 <h4 className="font-semibold text-foreground mb-3 text-sm">
-                  Prix: ${priceRange[0]} - ${priceRange[1]}
+                  Prix: {priceRange[0]} FCFA - {priceRange[1]} FCFA
                 </h4>
                 <input
                   type="range"
@@ -301,7 +247,7 @@ export default function ProductsPage() {
               <h3 className="font-semibold text-foreground mb-4">Prix</h3>
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  ${priceRange[0].toFixed(2)} - ${priceRange[1].toFixed(2)}
+                  {priceRange[0].toFixed(0)} FCFA - {priceRange[1].toFixed(0)} FCFA
                 </p>
                 <input
                   type="range"
@@ -374,6 +320,15 @@ export default function ProductsPage() {
                           Frais
                         </div>
                       )}
+                      <button
+                        onClick={(e) => handleToggleFavorite(e, product.id)}
+                        className={`absolute top-3 left-3 p-2 rounded-full transition ${product.is_favorite
+                          ? "bg-red-500 text-white hover:bg-red-600"
+                          : "bg-white/80 text-gray-600 hover:bg-white hover:text-red-500"
+                          }`}
+                      >
+                        <Heart className={`w-4 h-4 ${product.is_favorite ? "fill-current" : ""}`} />
+                      </button>
                     </div>
 
                     {/* Product Info */}
@@ -401,7 +356,7 @@ export default function ProductsPage() {
                       {/* Footer */}
                       <div className="flex items-center justify-between pt-3 border-t border-border">
                         <div>
-                          <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
+                          <p className="text-lg font-bold text-primary">{Number(product.price).toFixed(0)} FCFA</p>
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                             <MapPin className="w-3 h-3" />
                             {product.distance}km

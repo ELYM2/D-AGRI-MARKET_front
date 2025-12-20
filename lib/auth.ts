@@ -6,7 +6,21 @@ function dispatchAuthChange() {
   }
 }
 
-export async function register(payload: { username: string; email?: string; password: string }) {
+export interface RegisterData {
+  username: string
+  email?: string
+  password: string
+  first_name?: string
+  last_name?: string
+  is_seller?: boolean
+  business_name?: string
+  business_description?: string
+  business_address?: string
+  business_city?: string
+  business_postal_code?: string
+}
+
+export async function register(payload: RegisterData) {
   const res = await fetch(`${baseUrl}/api/auth/register/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

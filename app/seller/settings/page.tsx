@@ -192,7 +192,7 @@ export default function SettingsPage() {
 
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Commande minimale ($)</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Commande minimale (FCFA)</label>
                 <input
                   type="number"
                   value={settings.minOrder}

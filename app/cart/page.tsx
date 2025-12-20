@@ -204,8 +204,8 @@ export default function CartPage() {
 
                       {/* Price */}
                       <div className="text-right">
-                        <p className="text-lg font-bold text-primary">${(Number(item.product.price) * item.quantity).toFixed(2)}</p>
-                        <p className="text-xs text-muted-foreground">${Number(item.product.price).toFixed(2)} / unité</p>
+                        <p className="text-lg font-bold text-primary">{(Number(item.product.price) * item.quantity).toFixed(0)} FCFA</p>
+                        <p className="text-xs text-muted-foreground">{Number(item.product.price).toFixed(0)} FCFA / unité</p>
                       </div>
                     </div>
                   </div>
@@ -221,27 +221,27 @@ export default function CartPage() {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Sous-total ({items.length} articles)</span>
-                    <span className="font-medium text-foreground">${subtotal.toFixed(2)}</span>
+                    <span className="font-medium text-foreground">{subtotal.toFixed(0)} FCFA</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Livraison</span>
-                    <span className="font-medium text-foreground">{shipping === 0 ? "Gratuite" : `$${shipping.toFixed(2)}`}</span>
+                    <span className="font-medium text-foreground">{shipping === 0 ? "Gratuite" : `${shipping.toFixed(0)} FCFA`}</span>
                   </div>
                   {shipping === 0 && (
                     <p className="text-xs text-green-600">✓ Livraison gratuite appliquée</p>
                   )}
                   {shipping > 0 && subtotal < 50 && (
                     <p className="text-xs text-muted-foreground">
-                      Ajoutez ${(50 - subtotal).toFixed(2)} pour la livraison gratuite
+                      Ajoutez {(50 - subtotal).toFixed(0)} FCFA pour la livraison gratuite
                     </p>
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Taxes (10%)</span>
-                    <span className="font-medium text-foreground">${tax.toFixed(2)}</span>
+                    <span className="font-medium text-foreground">{tax.toFixed(0)} FCFA</span>
                   </div>
                   <div className="border-t border-border pt-3 flex justify-between">
                     <span className="font-semibold text-foreground">Total</span>
-                    <span className="text-2xl font-bold text-primary">${total.toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-primary">{total.toFixed(0)} FCFA</span>
                   </div>
                 </div>
 
@@ -255,7 +255,7 @@ export default function CartPage() {
                     <ShoppingBag className="w-4 h-4" />
                     Paiement sécurisé
                   </p>
-                  <p>Livraison gratuite pour les commandes &gt; $50</p>
+                  <p>Livraison gratuite pour les commandes &gt; 50 FCFA</p>
                 </div>
               </div>
             </div>

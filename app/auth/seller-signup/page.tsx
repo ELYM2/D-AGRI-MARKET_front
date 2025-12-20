@@ -4,12 +4,17 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Leaf, Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { register } from "@/lib/auth"
+import { showToast } from "@/components/toast-notification"
 
 export default function SellerSignupPage() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [step, setStep] = useState(1)
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     // Business Info
     businessName: "",
@@ -72,10 +77,32 @@ export default function SellerSignupPage() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (validateStep()) {
-      console.log("[v0] Seller signup:", formData)
+      setLoading(true)
+      try {
+        await register({
+          username: formData.email, // Use email as username
+          email: formData.email,
+          password: formData.password,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          is_seller: true,
+          business_name: formData.businessName,
+          business_description: formData.description,
+          business_address: formData.address,
+          business_city: formData.city,
+          business_postal_code: formData.postalCode,
+        })
+        showToast("success", "Compte créé", "Votre compte vendeur a été créé avec succès")
+        router.push("/seller") // Redirect to seller dashboard
+      } catch (error: any) {
+        console.error("Registration error:", error)
+        showToast("error", "Erreur", error.message || "Impossible de créer le compte")
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -353,8 +380,8 @@ export default function SellerSignupPage() {
                   Continuer
                 </Button>
               ) : (
-                <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90">
-                  Créer mon commerce
+                <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90" disabled={loading}>
+                  {loading ? "Création..." : "Créer mon commerce"}
                 </Button>
               )}
             </div>
@@ -368,7 +395,7 @@ export default function SellerSignupPage() {
             </Link>
           </div>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   )
 }

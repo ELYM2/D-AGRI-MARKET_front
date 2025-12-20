@@ -1,12 +1,9 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Space_Grotesk } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { ToastContainer } from "@/components/toast-notification"
 import { AuthProvider } from "@/hooks/use-auth"
 import "./globals.css"
-
-const fontSans = Space_Grotesk({ subsets: ["latin"], variable: "--font-sans" })
 
 export const metadata: Metadata = {
   title: "LocalMarket - Achetez local, soutenez les producteurs",
@@ -38,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className={`${fontSans.className} antialiased`}>
+      <body className="font-sans antialiased">
         <AuthProvider>
           {children}
           <Analytics />

@@ -83,9 +83,9 @@ export default function CheckoutPage() {
 
       showToast("success", "Paiement traité", "Votre commande a été confirmée avec succès")
       setStep("confirmation")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating order:", error)
-      showToast("error", "Erreur", "Impossible de traiter la commande")
+      showToast("error", "Erreur", error.message || "Impossible de traiter la commande")
     } finally {
       setLoading(false)
     }
@@ -458,21 +458,21 @@ export default function CheckoutPage() {
               <div className="space-y-3">
                 <div className="flex justify-between text-foreground">
                   <span>{cart.total_items} articles</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{subtotal.toFixed(0)} FCFA</span>
                 </div>
                 <div className="flex justify-between text-foreground">
                   <span>Livraison</span>
-                  <span>${shipping.toFixed(2)}</span>
+                  <span>{shipping.toFixed(0)} FCFA</span>
                 </div>
                 <div className="flex justify-between text-foreground">
                   <span>TVA (10%)</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>{tax.toFixed(0)} FCFA</span>
                 </div>
               </div>
 
               <div className="border-t border-border pt-4 flex justify-between items-center">
                 <span className="text-lg font-semibold text-foreground">Total</span>
-                <span className="text-2xl font-bold text-primary">${total.toFixed(2)}</span>
+                <span className="text-2xl font-bold text-primary">{total.toFixed(0)} FCFA</span>
               </div>
 
               <div className="text-xs text-muted-foreground space-y-1">

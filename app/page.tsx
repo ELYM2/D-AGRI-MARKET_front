@@ -2,50 +2,17 @@ import Link from "next/link"
 import Image from "next/image"
 import { Search, MapPin, ShoppingBag, Users, Leaf, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Navbar from "@/components/navbar"
+import SellerCTA from "@/components/seller-cta"
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      {/* Navigation Header */}
-      <header className="sticky top-0 z-50 bg-card border-b border-border">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Leaf className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">D-AGRI MARKET</span>
-          </div>
+    <div className="min-h-screen bg-background">
+      <Navbar />
 
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/products" className="text-sm text-foreground hover:text-primary transition">
-              Produits
-            </Link>
-            <Link href="/sellers" className="text-sm text-foreground hover:text-primary transition">
-              Producteurs
-            </Link>
-            <Link href="/about" className="text-sm text-foreground hover:text-primary transition">
-              À propos
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link href="/auth/login">
-              <Button variant="ghost" size="sm" className="text-foreground">
-                Connexion
-              </Button>
-            </Link>
-            <Link href="/auth/signup">
-              <Button size="sm" className="bg-primary hover:bg-primary/90">
-                Inscription
-              </Button>
-            </Link>
-          </div>
-        </nav>
-      </header>
-
-      <main className="flex-1">
+      <main>
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-accent/5 py-20 md:py-32">
+        <section className="relative py-12 md:py-24 overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div className="space-y-6">
@@ -69,11 +36,7 @@ export default function Home() {
                       Explorer les produits
                     </Button>
                   </Link>
-                  <Link href="/auth/seller-signup">
-                    <Button size="lg" variant="outline" className="w-full sm:w-auto bg-transparent">
-                      Devenir vendeur
-                    </Button>
-                  </Link>
+                  <SellerCTA />
                 </div>
               </div>
 
@@ -177,11 +140,7 @@ export default function Home() {
                   Créer un compte acheteur
                 </Button>
               </Link>
-              <Link href="/auth/seller-signup">
-                <Button size="lg" variant="outline">
-                  Devenir producteur
-                </Button>
-              </Link>
+              <SellerCTA />
             </div>
           </div>
         </section>

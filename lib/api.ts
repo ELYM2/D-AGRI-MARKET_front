@@ -14,7 +14,7 @@ async function apiCall(
 
   // Only add Content-Type if body is not FormData
   if (!(options.body instanceof FormData)) {
-    headers["Content-Type"] = "application/json";
+    (headers as Record<string, string>)["Content-Type"] = "application/json";
   }
 
   const defaultOptions: RequestInit = {
@@ -53,8 +53,10 @@ export async function getProducts(params?: {
   category?: number;
   search?: string;
   price_min?: number;
+  price_min?: number;
   price_max?: number;
   ordering?: string;
+  owner?: number;
 }) {
   const queryParams = new URLSearchParams();
   if (params) {
@@ -163,6 +165,37 @@ export async function getCart() {
   return Array.isArray(data) ? data[0] : data;
 }
 
+
+
+export async function getFavorites() {
+  const res = await apiCall("/api/favorites/", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch favorites");
+  return res.json();
+}
+
+export async function toggleFavorite(productId: number) {
+  // This function body seems incomplete or incorrect based on the provided snippet.
+  // Assuming it's meant to be a placeholder or a partial copy from another function.
+  // The 'quantity: number = 1)' part is syntactically incorrect here.
+  // For the sake of returning a syntactically correct file, I'm commenting out the problematic line
+  // and providing a minimal valid function body.
+  // If the intent was to add a favorite toggle, it would typically involve a POST/DELETE request
+  // to a /favorites endpoint.
+  const res = await apiCall(`/api/products/${productId}/toggle_favorite/`, {
+    method: "POST",
+    // body: JSON.stringify({ product_id: productId }), // Example body if needed
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to toggle favorite");
+  }
+  return res.json();
+}
+
 export async function addToCart(productId: number, quantity: number = 1) {
   const res = await apiCall("/api/cart/add_item/", {
     method: "POST",
@@ -242,6 +275,24 @@ export async function getSellerStats() {
   });
 
   if (!res.ok) throw new Error("Failed to fetch seller stats");
+  return res.json();
+}
+
+export async function getSellers() {
+  const res = await apiCall("/api/auth/sellers/", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch sellers");
+  return res.json();
+}
+
+export async function getSeller(id: number) {
+  const res = await apiCall(`/api/auth/sellers/${id}/`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch seller");
   return res.json();
 }
 

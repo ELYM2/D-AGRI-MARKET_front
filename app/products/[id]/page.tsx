@@ -174,9 +174,9 @@ export default function ProductDetailPage() {
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Prix:</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl font-bold text-primary">${Number(product.price).toFixed(2)}</span>
+                  <span className="text-3xl font-bold text-primary">{Number(product.price).toFixed(0)} FCFA</span>
                   {product.old_price && Number(product.old_price) > Number(product.price) && (
-                    <span className="text-xl text-muted-foreground line-through">${Number(product.old_price).toFixed(2)}</span>
+                    <span className="text-xl text-muted-foreground line-through">{Number(product.old_price).toFixed(0)} FCFA</span>
                   )}
                 </div>
               </div>
@@ -238,7 +238,7 @@ export default function ProductDetailPage() {
                     <Truck className="w-5 h-5 text-primary mt-0.5" />
                     <div>
                       <p className="font-semibold text-sm text-foreground">Livraison gratuite</p>
-                      <p className="text-xs text-muted-foreground">Pour les commandes &gt; $50</p>
+                      <p className="text-xs text-muted-foreground">Pour les commandes &gt; 50 FCFA</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">

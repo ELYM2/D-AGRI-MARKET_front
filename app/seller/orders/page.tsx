@@ -143,7 +143,7 @@ export default function SellerOrdersPage() {
 
                     <div className="flex items-center gap-4">
                       <div>
-                        <p className="text-lg font-bold text-primary">${order.total.toFixed(2)}</p>
+                        <p className="text-lg font-bold text-primary">{order.total.toFixed(0)} FCFA</p>
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {order.date}

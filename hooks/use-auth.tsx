@@ -33,6 +33,7 @@ type Me = {
   first_name?: string
   last_name?: string
   profile?: Profile | null
+  is_seller?: boolean
 }
 
 type LoginPayload = { username: string; password: string }
