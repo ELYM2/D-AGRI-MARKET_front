@@ -1,7 +1,7 @@
 import Link from "next/link"
-import Image from "next/image"
 import { Star, MapPin, ShoppingBag, Leaf } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { resolveMediaUrl } from "@/lib/media"
 
 interface ProductCardProps {
   id: number
@@ -19,17 +19,18 @@ interface ProductCardProps {
 export function ProductCard({ id, name, price, old_price, image, seller, rating, reviews, distance, fresh }: ProductCardProps) {
   const hasDiscount = Boolean(old_price && old_price > price)
   const discountPercent = hasDiscount ? Math.round(((old_price! - price) / old_price!) * 100) : null
+  const imageUrl = resolveMediaUrl(image) || "/placeholder.svg"
 
   return (
     <Link href={`/products/${id}`}>
       <div className="bg-card rounded-lg border border-border overflow-hidden hover:border-primary/20 transition group cursor-pointer h-full flex flex-col">
         <div className="relative overflow-hidden bg-muted h-48 flex items-center justify-center">
-          <Image
-            src={image || "/placeholder.svg"}
+          <img
+            src={imageUrl}
             alt={name}
-            fill
-            className="object-cover transition duration-300 group-hover:scale-105"
-            sizes="(max-width: 1024px) 50vw, 33vw"
+            className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+            loading="lazy"
+            decoding="async"
           />
           <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
             {fresh && (

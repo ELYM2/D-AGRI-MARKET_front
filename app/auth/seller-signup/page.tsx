@@ -99,7 +99,98 @@ export default function SellerSignupPage() {
         router.push("/seller") // Redirect to seller dashboard
       } catch (error: any) {
         console.error("Registration error:", error)
-        showToast("error", "Erreur", error.message || "Impossible de créer le compte")
+
+        // Parse error message from API
+        let errorMessage = "Impossible de créer le compte"
+        const formErrors: Record<string, string> = {}
+
+        if (error.message) {
+          try {
+            // Try to parse error message as JSON (from Django API)
+            const errorData = JSON.parse(error.message)
+
+            // Handle email errors
+            if (errorData.email) {
+              const emailError = Array.isArray(errorData.email) ? errorData.email[0] : errorData.email
+              if (emailError.includes("already exists") || emailError.includes("already registered")) {
+                formErrors.email = "Cet email est déjà utilisé. Essayez de vous connecter."
+                errorMessage = "Email déjà utilisé"
+              } else if (emailError.includes("invalid")) {
+                formErrors.email = "L'adresse email n'est pas valide."
+                errorMessage = "Email invalide"
+              } else if (emailError.includes("required")) {
+                formErrors.email = "L'email est requis."
+              } else {
+                formErrors.email = emailError
+              }
+            }
+
+            // Handle password errors
+            if (errorData.password) {
+              const passwordError = Array.isArray(errorData.password) ? errorData.password[0] : errorData.password
+              if (passwordError.includes("too common")) {
+                formErrors.password = "Ce mot de passe est trop courant. Choisissez un mot de passe plus sécurisé (ex: MonMotDePasse2025!)."
+                errorMessage = "Mot de passe trop faible"
+              } else if (passwordError.includes("too short")) {
+                formErrors.password = "Ce mot de passe est trop court. Minimum 8 caractères."
+                errorMessage = "Mot de passe trop court"
+              } else if (passwordError.includes("entirely numeric")) {
+                formErrors.password = "Le mot de passe ne peut pas être entièrement numérique."
+                errorMessage = "Mot de passe invalide"
+              } else if (passwordError.includes("too similar")) {
+                formErrors.password = "Le mot de passe est trop similaire à vos informations personnelles."
+                errorMessage = "Mot de passe trop similaire"
+              } else if (passwordError.includes("required")) {
+                formErrors.password = "Le mot de passe est requis."
+              } else {
+                formErrors.password = passwordError
+              }
+            }
+
+            // Handle first_name errors
+            if (errorData.first_name) {
+              const firstNameError = Array.isArray(errorData.first_name) ? errorData.first_name[0] : errorData.first_name
+              formErrors.firstName = firstNameError.includes("required") ? "Le prénom est requis." : firstNameError
+            }
+
+            // Handle last_name errors
+            if (errorData.last_name) {
+              const lastNameError = Array.isArray(errorData.last_name) ? errorData.last_name[0] : errorData.last_name
+              formErrors.lastName = lastNameError.includes("required") ? "Le nom est requis." : lastNameError
+            }
+
+            // Handle business_name errors
+            if (errorData.business_name) {
+              const businessNameError = Array.isArray(errorData.business_name) ? errorData.business_name[0] : errorData.business_name
+              formErrors.businessName = businessNameError.includes("required") ? "Le nom du commerce est requis." : businessNameError
+            }
+
+            // Handle business_description errors
+            if (errorData.business_description) {
+              const descError = Array.isArray(errorData.business_description) ? errorData.business_description[0] : errorData.business_description
+              formErrors.description = descError.includes("required") ? "La description est requise." : descError
+            }
+
+            // Handle generic non_field_errors
+            if (errorData.non_field_errors) {
+              const nonFieldError = Array.isArray(errorData.non_field_errors) ? errorData.non_field_errors[0] : errorData.non_field_errors
+              errorMessage = nonFieldError
+            }
+
+            if (Object.keys(formErrors).length > 0) {
+              setErrors(formErrors)
+              // Set step to the one with errors
+              if (formErrors.businessName || formErrors.description) setStep(1)
+              else if (formErrors.firstName || formErrors.lastName || formErrors.email) setStep(2)
+              else if (formErrors.password) setStep(4)
+            }
+          } catch {
+            // If not JSON, use the error message as is
+            errorMessage = error.message
+          }
+        }
+
+        showToast("error", "Erreur d'inscription", errorMessage)
       } finally {
         setLoading(false)
       }

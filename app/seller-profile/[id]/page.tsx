@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { useParams } from "next/navigation"
 import { MapPin, Phone, Mail, Globe, Star, Package, Users, Clock, Leaf } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getSeller, getProducts } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
+import { resolveMediaUrl } from "@/lib/media"
 
 export default function SellerProfilePage() {
   const params = useParams()
@@ -138,14 +138,15 @@ export default function SellerProfilePage() {
                   {products.map((product) => (
                     <Link key={product.id} href={`/products/${product.id}`}>
                       <div className="bg-card rounded-lg border border-border overflow-hidden hover:border-primary/20 transition h-full">
-                        <div className="relative h-40 bg-muted">
-                          <Image
-                            src={product.images?.[0]?.image || "/placeholder.svg"}
-                            alt={product.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
+                      <div className="relative h-40 bg-muted">
+                        <img
+                          src={resolveMediaUrl(product.images?.[0]?.image) || "/placeholder.svg"}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
                         <div className="p-4">
                           <h3 className="font-semibold text-foreground truncate">{product.name}</h3>
                           <p className="text-lg font-bold text-primary mt-2">{Number(product.price).toFixed(0)} FCFA</p>

@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Heart, Leaf, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getFavorites, toggleFavorite } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
+import { resolveMediaUrl } from "@/lib/media"
 
 type Favorite = {
   id: number
@@ -93,20 +93,21 @@ export default function FavoritesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {favorites.map((fav) => (
               <div key={fav.id} className="bg-card rounded-lg border border-border overflow-hidden flex flex-col">
-                <div className="relative h-44 bg-muted">
-                  <Image
-                    src={fav.product.images?.[0]?.image || "/placeholder.svg"}
-                    alt={fav.product.name}
-                    fill
-                    className="object-cover"
-                  />
-                  <button
-                    onClick={() => handleRemove(fav.product.id)}
-                    className="absolute top-3 right-3 bg-destructive text-destructive-foreground p-2 rounded-full hover:bg-destructive/90"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                  <div className="relative h-44 bg-muted">
+                    <img
+                      src={resolveMediaUrl(fav.product.images?.[0]?.image) || "/placeholder.svg"}
+                      alt={fav.product.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <button
+                      onClick={() => handleRemove(fav.product.id)}
+                      className="absolute top-3 right-3 bg-destructive text-destructive-foreground p-2 rounded-full hover:bg-destructive/90"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 <div className="p-4 flex-1 flex flex-col">
                   <div className="flex-1">
                     <h3 className="font-semibold text-foreground mb-1 line-clamp-2">{fav.product.name}</h3>

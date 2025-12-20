@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Leaf } from "lucide-react"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { getCart, removeFromCart, updateCartQuantity, clearCart } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 import { useRouter } from "next/navigation"
+import { resolveMediaUrl } from "@/lib/media"
 
 export default function CartPage() {
   const router = useRouter()
@@ -152,11 +152,12 @@ export default function CartPage() {
                 <div key={item.id} className="bg-card rounded-lg border border-border p-4 flex gap-4">
                   {/* Product Image */}
                   <div className="relative w-24 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                    <Image
-                      src={item.product.images?.[0]?.image || "/placeholder.svg"}
+                    <img
+                      src={resolveMediaUrl(item.product.images?.[0]?.image) || "/placeholder.svg"}
                       alt={item.product.name}
-                      fill
-                      className="object-cover"
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
                   </div>
 

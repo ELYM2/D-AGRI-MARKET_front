@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { MapPin, Star, Leaf, ShoppingBag, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getSellers } from "@/lib/api"

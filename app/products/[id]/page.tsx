@@ -2,22 +2,28 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { useParams, useRouter } from "next/navigation"
-import { Star, MapPin, ShoppingBag, Leaf, Heart, Share2, ArrowLeft, Truck, Shield, Clock } from "lucide-react"
+import { Star, MapPin, ShoppingBag, Leaf, Heart, Share2, ArrowLeft, Truck, Shield, Clock, MessageCircle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getProduct, addToCart } from "@/lib/api"
+import { getProduct, addToCart, sendMessage } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
+import { resolveMediaUrl } from "@/lib/media"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const { me } = useAuth()
   const [product, setProduct] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
   const [activeTab, setActiveTab] = useState("reviews")
   const [addingToCart, setAddingToCart] = useState(false)
+  const [showContactDialog, setShowContactDialog] = useState(false)
+  const [messageSubject, setMessageSubject] = useState("")
+  const [messageBody, setMessageBody] = useState("")
+  const [sendingMessage, setSendingMessage] = useState(false)
 
   useEffect(() => {
     async function loadProduct() {
@@ -69,6 +75,42 @@ export default function ProductDetailPage() {
     }
   }
 
+  const handleContactSeller = () => {
+    if (!me) {
+      showToast("error", "Connexion requise", "Veuillez vous connecter pour contacter le vendeur")
+      router.push("/auth/login")
+      return
+    }
+    setMessageSubject(`Question concernant: ${product.name}`)
+    setMessageBody("")
+    setShowContactDialog(true)
+  }
+
+  const handleSendMessage = async () => {
+    if (!messageSubject.trim() || !messageBody.trim()) {
+      showToast("error", "Champs requis", "Veuillez remplir le sujet et le message")
+      return
+    }
+
+    try {
+      setSendingMessage(true)
+      await sendMessage({
+        receiver: product.owner,
+        subject: messageSubject.trim(),
+        body: messageBody.trim(),
+      })
+      showToast("success", "Message envoyé", "Votre message a été envoyé au vendeur")
+      setShowContactDialog(false)
+      setMessageSubject("")
+      setMessageBody("")
+    } catch (error: any) {
+      console.error("Error sending message:", error)
+      showToast("error", "Erreur", error?.message || "Impossible d'envoyer le message")
+    } finally {
+      setSendingMessage(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -94,7 +136,10 @@ export default function ProductDetailPage() {
     )
   }
 
-  const primaryImage = product.images?.find((img: any) => img.is_primary)?.image || product.images?.[0]?.image
+  const primaryImage =
+    resolveMediaUrl(product.images?.find((img: any) => img.is_primary)?.image) ||
+    resolveMediaUrl(product.images?.[0]?.image) ||
+    "/placeholder.svg"
 
   return (
     <div className="min-h-screen bg-background">
@@ -109,12 +154,12 @@ export default function ProductDetailPage() {
           {/* Product Image */}
           <div className="flex flex-col gap-4">
             <div className="relative overflow-hidden bg-muted rounded-lg h-96 flex items-center justify-center">
-              <Image
-                src={primaryImage || "/placeholder.svg"}
+              <img
+                src={primaryImage}
                 alt={product.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
               {product.stock > 0 && (
                 <div className="absolute top-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2">
@@ -129,7 +174,13 @@ export default function ProductDetailPage() {
               <div className="grid grid-cols-4 gap-2">
                 {product.images.slice(0, 4).map((img: any, idx: number) => (
                   <div key={idx} className="relative h-20 bg-muted rounded-lg overflow-hidden cursor-pointer hover:opacity-75 transition">
-                    <Image src={img.image || "/placeholder.svg"} alt={`${product.name} ${idx + 1}`} fill className="object-cover" />
+                    <img
+                      src={resolveMediaUrl(img.image) || "/placeholder.svg"}
+                      alt={`${product.name} ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
                 ))}
               </div>
@@ -182,7 +233,18 @@ export default function ProductDetailPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Vendeur:</span>
-                <span className="text-primary font-medium">{product.owner_name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-primary font-medium">{product.owner_name}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleContactSeller}
+                    className="ml-2"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-1" />
+                    Contacter
+                  </Button>
+                </div>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Stock:</span>
@@ -269,6 +331,72 @@ export default function ProductDetailPage() {
           </div>
         )}
       </main>
+
+      {/* Contact Seller Dialog */}
+      {showContactDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg border border-border p-6 max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-foreground">Contacter le vendeur</h2>
+              <button
+                onClick={() => setShowContactDialog(false)}
+                className="text-muted-foreground hover:text-foreground transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Envoyez un message à <span className="font-medium text-foreground">{product.owner_name}</span> concernant ce produit.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Sujet *</label>
+                <input
+                  type="text"
+                  value={messageSubject}
+                  onChange={(e) => setMessageSubject(e.target.value)}
+                  placeholder="Sujet du message"
+                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Message *</label>
+                <textarea
+                  value={messageBody}
+                  onChange={(e) => setMessageBody(e.target.value)}
+                  rows={5}
+                  placeholder="Votre message..."
+                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowContactDialog(false)}
+                  disabled={sendingMessage}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSendMessage}
+                  disabled={sendingMessage || !messageSubject.trim() || !messageBody.trim()}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  {sendingMessage ? "Envoi..." : "Envoyer le message"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -2,21 +2,23 @@
 
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Search, MapPin, Filter, ShoppingBag, Star, Leaf, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getProducts, toggleFavorite } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 import { useAuth } from "@/hooks/use-auth"
+import { resolveMediaUrl } from "@/lib/media"
 
 
 const CATEGORIES = ["Tous", "Légumes", "Fruits", "Produits laitiers", "Œufs & Volaille", "Produits apicoles"]
+const DEFAULT_PRICE_LIMIT = 20000
 
 type ApiProduct = {
   id: number
   name: string
   description?: string
   price: number | string
+  old_price?: number | string
   stock?: number
   category?: number
   category_name?: string
@@ -30,22 +32,48 @@ export default function ProductsPage() {
   const { me } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("Tous")
-  const [priceRange, setPriceRange] = useState([0, 20])
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, DEFAULT_PRICE_LIMIT])
+  const [priceLimit, setPriceLimit] = useState(DEFAULT_PRICE_LIMIT)
   const [sortBy, setSortBy] = useState("popular")
   const [showFilters, setShowFilters] = useState(false)
   const [promoOnly, setPromoOnly] = useState(false)
   const [apiProducts, setApiProducts] = useState<ApiProduct[] | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const priceStep = Math.max(1, Math.round(priceLimit / 200))
+
+  const updatePriceFilters = (products: ApiProduct[] | null) => {
+    if (!products || products.length === 0) {
+      setPriceLimit(DEFAULT_PRICE_LIMIT)
+      setPriceRange([0, DEFAULT_PRICE_LIMIT])
+      return
+    }
+
+    const maxPriceFromProducts = Math.max(
+      DEFAULT_PRICE_LIMIT,
+      ...products.map((product) => Number(product.price) || 0),
+    )
+
+    setPriceLimit(maxPriceFromProducts)
+    setPriceRange([0, maxPriceFromProducts])
+  }
+
   useEffect(() => {
     let cancelled = false
     async function load() {
       try {
         setLoading(true)
-        const data = await getProducts()
-        if (!cancelled) setApiProducts(Array.isArray(data?.results) ? data.results : data)
+        const data = await getProducts({ is_active: true })
+        if (!cancelled) {
+          const products = Array.isArray(data?.results) ? data.results : data
+          setApiProducts(products)
+          updatePriceFilters(products)
+        }
       } catch {
-        if (!cancelled) setApiProducts(null)
+        if (!cancelled) {
+          setApiProducts(null)
+          updatePriceFilters(null)
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -58,20 +86,23 @@ export default function ProductsPage() {
 
   const sourceProducts = useMemo(() => {
     if (apiProducts && apiProducts.length) {
-      return apiProducts.map((p) => ({
-        id: p.id,
-        name: p.name,
-        price: Number(p.price),
-        old_price: p.old_price ? Number(p.old_price) : undefined,
-        rating: 0, // Default rating
-        reviews: 0,
-        image: p.images && p.images.length > 0 ? p.images[0].image : "/placeholder.svg",
-        category: p.category_name || "Divers",
-        seller: p.owner_name || "Vendeur",
-        distance: "0 km",
-        fresh: true,
-        is_favorite: p.is_favorite || false,
-      }))
+      return apiProducts.map((p) => {
+        const imageUrl = resolveMediaUrl(p.images?.[0]?.image) || "/placeholder.svg"
+        return {
+          id: p.id,
+          name: p.name,
+          price: Number(p.price),
+          old_price: p.old_price ? Number(p.old_price) : undefined,
+          rating: 0, // Default rating
+          reviews: 0,
+          image: imageUrl,
+          category: p.category_name || "Divers",
+          seller: p.owner_name || "Vendeur",
+          distance: "0 km",
+          fresh: true,
+          is_favorite: p.is_favorite || false,
+        }
+      })
     }
     return []
   }, [apiProducts])
@@ -226,7 +257,8 @@ export default function ProductsPage() {
                 <input
                   type="range"
                   min="0"
-                  max="20"
+                  max={priceLimit}
+                  step={priceStep}
                   value={priceRange[1]}
                   onChange={(e) => setPriceRange([priceRange[0], Number.parseInt(e.target.value)])}
                   className="w-full"
@@ -267,8 +299,8 @@ export default function ProductsPage() {
                 <input
                   type="range"
                   min="0"
-                  max="20"
-                  step="0.5"
+                  max={priceLimit}
+                  step={priceStep}
                   value={priceRange[1]}
                   onChange={(e) => setPriceRange([priceRange[0], Number.parseFloat(e.target.value)])}
                   className="w-full accent-primary"
@@ -277,7 +309,7 @@ export default function ProductsPage() {
                   <input
                     type="number"
                     min="0"
-                    max="20"
+                    max={priceLimit}
                     value={priceRange[0]}
                     onChange={(e) => setPriceRange([Number.parseFloat(e.target.value), priceRange[1]])}
                     className="w-16 px-2 py-1 bg-input rounded text-foreground"
@@ -285,7 +317,7 @@ export default function ProductsPage() {
                   <input
                     type="number"
                     min="0"
-                    max="20"
+                    max={priceLimit}
                     value={priceRange[1]}
                     onChange={(e) => setPriceRange([priceRange[0], Number.parseFloat(e.target.value)])}
                     className="w-16 px-2 py-1 bg-input rounded text-foreground"
@@ -294,16 +326,16 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            <Button
-              variant="outline"
-              className="w-full bg-transparent"
-              onClick={() => {
-                setSearchQuery("")
-                setSelectedCategory("Tous")
-                setPriceRange([0, 20])
-                setPromoOnly(false)
-              }}
-            >
+              <Button
+                variant="outline"
+                className="w-full bg-transparent"
+                onClick={() => {
+                  setSearchQuery("")
+                  setSelectedCategory("Tous")
+                  setPriceRange([0, priceLimit])
+                  setPromoOnly(false)
+                }}
+              >
               Réinitialiser
             </Button>
           </aside>
@@ -323,12 +355,12 @@ export default function ProductsPage() {
                   <div className="bg-card rounded-lg border border-border overflow-hidden hover:border-primary/20 transition group cursor-pointer h-full flex flex-col">
                     {/* Product Image */}
                     <div className="relative overflow-hidden bg-muted h-48 flex items-center justify-center">
-                      <Image
+                      <img
                         src={product.image || "/placeholder.svg"}
                         alt={product.name}
-                        fill
-                        className="object-cover transition duration-300 group-hover:scale-105"
-                        sizes="(max-width: 1024px) 50vw, 33vw"
+                        className="object-cover w-full h-full transition duration-300 group-hover:scale-105"
+                        loading="lazy"
+                        decoding="async"
                       />
                       <div className="absolute top-3 right-3 flex flex-col items-end gap-2">
                         {product.fresh && (
@@ -410,7 +442,7 @@ export default function ProductsPage() {
                   onClick={() => {
                     setSearchQuery("")
                     setSelectedCategory("Tous")
-                    setPriceRange([0, 20])
+                    setPriceRange([0, priceLimit])
                   }}
                 >
                   Réinitialiser les filtres

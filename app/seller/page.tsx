@@ -2,37 +2,59 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
-import { BarChart3, Package, ShoppingCart, Users, TrendingUp, Plus, Eye, Edit, Trash2, Leaf, PauseCircle, PlayCircle } from "lucide-react"
+import { BarChart3, Package, ShoppingCart, Users, TrendingUp, Plus, Eye, Edit, Trash2, Leaf, PauseCircle, PlayCircle, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getSellerStats, getProducts, updateProduct, deleteProduct } from "@/lib/api"
+import { getSellerStats, getProducts, updateProduct, deleteProduct, getMessages } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
+import { resolveMediaUrl } from "@/lib/media"
 
 export default function SellerDashboard() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { me, loading: authLoading } = useAuth()
   const [stats, setStats] = useState<any>(null)
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [unreadMessages, setUnreadMessages] = useState(0)
 
   useEffect(() => {
-    if (user) {
+    // Redirect if not authenticated or not a seller
+    if (!authLoading && !me) {
+      router.push("/auth/login")
+      return
+    }
+
+    if (!authLoading && me && !me.is_seller) {
+      showToast("error", "Accès refusé", "Vous devez être vendeur pour accéder à cette page")
+      router.push("/")
+      return
+    }
+
+    if (me && me.is_seller) {
       loadDashboard()
     }
-  }, [user])
+  }, [me, authLoading, router])
 
   const loadDashboard = async () => {
     try {
       setLoading(true)
       const [statsData, productsData] = await Promise.all([
-        getSellerStats().catch(() => ({ total_sales: 0, total_orders: 0, total_products: 0, total_customers: 0 })),
-        user?.id ? getProducts({ owner: user.id }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] })
+        getSellerStats(),
+        getProducts({ owner: me?.id }),
       ])
-
       setStats(statsData)
-      setProducts(productsData.results || [])
+      setProducts(Array.isArray(productsData) ? productsData : productsData.results || [])
+
+      // Load unread messages count
+      try {
+        const messagesData = await getMessages("received")
+        const messages = Array.isArray(messagesData) ? messagesData : messagesData.results || []
+        const unread = messages.filter((msg: any) => !msg.is_read).length
+        setUnreadMessages(unread)
+      } catch (error) {
+        console.error("Error loading messages:", error)
+      }
     } catch (error) {
       console.error("Error loading dashboard:", error)
       showToast("error", "Erreur", "Impossible de charger le tableau de bord")
@@ -64,7 +86,7 @@ export default function SellerDashboard() {
     }
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -73,6 +95,11 @@ export default function SellerDashboard() {
         </div>
       </div>
     )
+  }
+
+  // Don't render if not authenticated or not a seller (will redirect in useEffect)
+  if (!me || !me.is_seller) {
+    return null
   }
 
   const statsCards = [
@@ -95,6 +122,17 @@ export default function SellerDashboard() {
           </Link>
 
           <div className="flex items-center gap-2">
+            <Link href="/messages">
+              <Button variant="ghost" className="relative">
+                <Mail className="w-4 h-4 mr-2" />
+                Messages
+                {unreadMessages > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadMessages > 9 ? '9+' : unreadMessages}
+                  </span>
+                )}
+              </Button>
+            </Link>
             <Link href="/">
               <Button variant="ghost">
                 Retour à l'accueil
@@ -113,7 +151,7 @@ export default function SellerDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Tableau de bord vendeur</h1>
-          <p className="text-muted-foreground">Bienvenue {user?.username || 'Vendeur'}</p>
+          <p className="text-muted-foreground">Bienvenue {me?.username || 'Vendeur'}</p>
         </div>
 
         {/* Stats Cards */}
@@ -174,11 +212,12 @@ export default function SellerDashboard() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           <div className="relative w-10 h-10 bg-muted rounded overflow-hidden flex-shrink-0">
-                            <Image
-                              src={product.images?.[0]?.image || "/placeholder.svg"}
+                            <img
+                              src={resolveMediaUrl(product.images?.[0]?.image) || "/placeholder.svg"}
                               alt={product.name}
-                              fill
-                              className="object-cover"
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              decoding="async"
                             />
                           </div>
                           <span className="font-medium text-foreground">{product.name}</span>
@@ -206,37 +245,37 @@ export default function SellerDashboard() {
                           {product.is_active ? 'Actif' : 'Inactif'}
                         </span>
                       </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link href={`/products/${product.id}`}>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </Link>
-                      <Link href={`/seller/products/${product.id}`}>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleActive(product)}
-                        title={product.is_active ? "Mettre en pause" : "Activer"}
-                      >
-                        {product.is_active ? (
-                          <PauseCircle className="w-4 h-4 text-yellow-600" />
-                        ) : (
-                          <PlayCircle className="w-4 h-4 text-green-600" />
-                        )}
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(product.id)}>
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                      <td className="py-3 px-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/products/${product.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </Link>
+                          <Link href={`/seller/products/${product.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleActive(product)}
+                            title={product.is_active ? "Mettre en pause" : "Activer"}
+                          >
+                            {product.is_active ? (
+                              <PauseCircle className="w-4 h-4 text-yellow-600" />
+                            ) : (
+                              <PlayCircle className="w-4 h-4 text-green-600" />
+                            )}
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(product.id)}>
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
