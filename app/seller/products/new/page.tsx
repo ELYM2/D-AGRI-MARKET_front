@@ -242,6 +242,25 @@ export default function CreateProductPage() {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Unité *</label>
+                <select
+                  name="unit"
+                  value={formData.unit}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition"
+                >
+                  <option value="kg">Kilogramme (kg)</option>
+                  <option value="g">Gramme (g)</option>
+                  <option value="piece">Pièce</option>
+                  <option value="liter">Litre (L)</option>
+                  <option value="bunch">Botte</option>
+                  <option value="bag">Sac</option>
+                  <option value="box">Boîte</option>
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-foreground mb-2">Catégorie *</label>
                 <select
                   name="category"

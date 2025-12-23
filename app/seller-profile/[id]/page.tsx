@@ -101,7 +101,16 @@ export default function SellerProfilePage() {
               </div>
 
               <div>
-                <h1 className="text-3xl font-bold text-foreground">{seller.business_name || seller.username}</h1>
+                <div className="flex-1 space-y-2">
+                  <div className="flex flex-col md:flex-row md:items-center gap-4">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{seller.business_name || seller.username}</h1>
+                    {seller.verified && (
+                      // Assuming there should be a verified badge or similar here
+                      // For now, leaving it empty as the instruction snippet was incomplete
+                      null
+                    )}
+                  </div>
+                </div>
                 <p className="text-muted-foreground">{seller.city}</p>
 
                 <div className="flex items-center gap-4 mt-3">
@@ -138,15 +147,15 @@ export default function SellerProfilePage() {
                   {products.map((product) => (
                     <Link key={product.id} href={`/products/${product.id}`}>
                       <div className="bg-card rounded-lg border border-border overflow-hidden hover:border-primary/20 transition h-full">
-                      <div className="relative h-40 bg-muted">
-                        <img
-                          src={resolveMediaUrl(product.images?.[0]?.image) || "/placeholder.svg"}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </div>
+                        <div className="relative h-40 bg-muted">
+                          <img
+                            src={resolveMediaUrl(product.images?.[0]?.image) || "/placeholder.svg"}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </div>
                         <div className="p-4">
                           <h3 className="font-semibold text-foreground truncate">{product.name}</h3>
                           <p className="text-lg font-bold text-primary mt-2">{Number(product.price).toFixed(0)} FCFA</p>

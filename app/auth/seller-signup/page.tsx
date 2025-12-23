@@ -23,6 +23,7 @@ export default function SellerSignupPage() {
     // Owner Info
     firstName: "",
     lastName: "",
+    username: "", // Added username
     email: "",
     phone: "",
     // Address
@@ -55,6 +56,7 @@ export default function SellerSignupPage() {
     } else if (step === 2) {
       if (!formData.firstName) newErrors.firstName = "Le prénom est requis"
       if (!formData.lastName) newErrors.lastName = "Le nom est requis"
+      if (!formData.username) newErrors.username = "Le nom d'utilisateur est requis" // Validate username
       if (!formData.email) newErrors.email = "L'email est requis"
       if (!formData.phone) newErrors.phone = "Le téléphone est requis"
     } else if (step === 3) {
@@ -83,7 +85,7 @@ export default function SellerSignupPage() {
       setLoading(true)
       try {
         await register({
-          username: formData.email, // Use email as username
+          username: formData.username, // Use actual username
           email: formData.email,
           password: formData.password,
           first_name: formData.firstName,
@@ -108,6 +110,19 @@ export default function SellerSignupPage() {
           try {
             // Try to parse error message as JSON (from Django API)
             const errorData = JSON.parse(error.message)
+
+            // Handle username errors
+            if (errorData.username) {
+              const usernameError = Array.isArray(errorData.username) ? errorData.username[0] : errorData.username
+              if (usernameError.includes("already exists")) {
+                formErrors.username = "Ce nom d'utilisateur est déjà pris."
+                errorMessage = "Nom d'utilisateur indisponible"
+              } else if (usernameError.includes("required")) {
+                formErrors.username = "Le nom d'utilisateur est requis."
+              } else {
+                formErrors.username = usernameError
+              }
+            }
 
             // Handle email errors
             if (errorData.email) {
@@ -181,7 +196,7 @@ export default function SellerSignupPage() {
               setErrors(formErrors)
               // Set step to the one with errors
               if (formErrors.businessName || formErrors.description) setStep(1)
-              else if (formErrors.firstName || formErrors.lastName || formErrors.email) setStep(2)
+              else if (formErrors.username || formErrors.firstName || formErrors.lastName || formErrors.email) setStep(2)
               else if (formErrors.password) setStep(4)
             }
           } catch {
@@ -312,6 +327,19 @@ export default function SellerSignupPage() {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Nom d'utilisateur *</label>
+                  <input
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    placeholder="jean.dupont"
+                    className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                  />
+                  {errors.username && <p className="text-xs text-destructive mt-1">{errors.username}</p>}
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Email *</label>
                   <input
                     type="email"
@@ -343,6 +371,7 @@ export default function SellerSignupPage() {
             {step === 3 && (
               <div className="space-y-6">
                 <h2 className="text-lg font-semibold text-foreground">Adresse du commerce</h2>
+
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Adresse *</label>

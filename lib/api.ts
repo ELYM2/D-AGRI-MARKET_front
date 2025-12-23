@@ -1,5 +1,5 @@
 // API Configuration
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 export const API_BASE_URL = baseUrl;
 
 // Helper function for API calls with authentication

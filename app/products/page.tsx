@@ -4,10 +4,11 @@ import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import { Search, MapPin, Filter, ShoppingBag, Star, Leaf, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getProducts, toggleFavorite } from "@/lib/api"
+import { getProducts, toggleFavorite, addToCart } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 import { useAuth } from "@/hooks/use-auth"
 import { resolveMediaUrl } from "@/lib/media"
+import { ProductCard } from "@/components/product-card"
 
 
 const CATEGORIES = ["Tous", "Légumes", "Fruits", "Produits laitiers", "Œufs & Volaille", "Produits apicoles"]
@@ -26,6 +27,17 @@ type ApiProduct = {
   owner_name?: string
   is_favorite?: boolean
   images?: { image: string }[]
+  unit?: string
+}
+
+const UNIT_LABELS: Record<string, string> = {
+  kg: "kg",
+  g: "g",
+  piece: "pièce",
+  liter: "L",
+  bunch: "botte",
+  bag: "sac",
+  box: "boîte",
 }
 
 export default function ProductsPage() {
@@ -101,6 +113,8 @@ export default function ProductsPage() {
           distance: "0 km",
           fresh: true,
           is_favorite: p.is_favorite || false,
+          unit: p.unit,
+          stock: p.stock,
         }
       })
     }
@@ -326,16 +340,16 @@ export default function ProductsPage() {
               </div>
             </div>
 
-              <Button
-                variant="outline"
-                className="w-full bg-transparent"
-                onClick={() => {
-                  setSearchQuery("")
-                  setSelectedCategory("Tous")
-                  setPriceRange([0, priceLimit])
-                  setPromoOnly(false)
-                }}
-              >
+            <Button
+              variant="outline"
+              className="w-full bg-transparent"
+              onClick={() => {
+                setSearchQuery("")
+                setSelectedCategory("Tous")
+                setPriceRange([0, priceLimit])
+                setPromoOnly(false)
+              }}
+            >
               Réinitialiser
             </Button>
           </aside>
@@ -349,88 +363,40 @@ export default function ProductsPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map((product) => (
-                <Link key={product.id} href={`/products/${product.id}`}>
-                  <div className="bg-card rounded-lg border border-border overflow-hidden hover:border-primary/20 transition group cursor-pointer h-full flex flex-col">
-                    {/* Product Image */}
-                    <div className="relative overflow-hidden bg-muted h-48 flex items-center justify-center">
-                      <img
-                        src={product.image || "/placeholder.svg"}
-                        alt={product.name}
-                        className="object-cover w-full h-full transition duration-300 group-hover:scale-105"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      <div className="absolute top-3 right-3 flex flex-col items-end gap-2">
-                        {product.fresh && (
-                          <div className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                            <Leaf className="w-3 h-3" />
-                            Frais
-                          </div>
-                        )}
-                        {product.old_price && product.old_price > product.price && (
-                          <div className="bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-xs font-semibold">
-                            -{Math.round(((product.old_price - product.price) / product.old_price) * 100)}%
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        onClick={(e) => handleToggleFavorite(e, product.id)}
-                        className={`absolute top-3 left-3 p-2 rounded-full transition ${product.is_favorite
-                          ? "bg-red-500 text-white hover:bg-red-600"
-                          : "bg-white/80 text-gray-600 hover:bg-white hover:text-red-500"
-                          }`}
-                      >
-                        <Heart className={`w-4 h-4 ${product.is_favorite ? "fill-current" : ""}`} />
-                      </button>
-                    </div>
-
-                    {/* Product Info */}
-                    <div className="p-4 flex-1 flex flex-col">
-                      <div className="mb-3 flex-1">
-                        <h3 className="font-semibold text-foreground group-hover:text-primary transition line-clamp-2">
-                          {product.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mt-1">{product.seller}</p>
-                      </div>
-
-                      {/* Rating */}
-                      <div className="flex items-center gap-1 mb-3">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-3.5 h-3.5 ${i < Math.floor(product.rating) ? "fill-accent text-accent" : "text-muted"}`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-xs text-muted-foreground">({product.reviews})</span>
-                      </div>
-
-                      {/* Footer */}
-                      <div className="flex items-center justify-between pt-3 border-t border-border">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-lg font-bold text-primary">{Number(product.price).toFixed(0)} FCFA</p>
-                            {product.old_price && product.old_price > product.price && (
-                              <p className="text-sm text-muted-foreground line-through">
-                                {Number(product.old_price).toFixed(0)} FCFA
-                              </p>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <MapPin className="w-3 h-3" />
-                            {product.distance}km
-                          </p>
-                        </div>
-                        <Button size="sm" className="bg-primary hover:bg-primary/90">
-                          <ShoppingBag className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
+              {filteredProducts.map((product, index) => (
+                <div
+                  key={product.id}
+                  className="animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <ProductCard
+                    product={{
+                      id: product.id,
+                      name: product.name,
+                      price: product.price,
+                      old_price: product.old_price,
+                      unit: product.unit,
+                      image: product.image,
+                      category: product.category,
+                      seller: product.seller,
+                      isFavorite: product.is_favorite,
+                      fresh: product.fresh,
+                      stock: product.stock
+                    }}
+                    onToggleFavorite={(e) => handleToggleFavorite(e, product.id)}
+                    onAddToCart={async (e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      try {
+                        await addToCart(product.id, 1)
+                        showToast("success", "Ajouté au panier", `${product.name} a été ajouté à votre panier`)
+                      } catch (error) {
+                        showToast("error", "Erreur", "Impossible d'ajouter au panier")
+                      }
+                    }}
+                  />
+                </div>
               ))}
             </div>
 
