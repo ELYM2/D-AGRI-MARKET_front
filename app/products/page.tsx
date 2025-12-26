@@ -2,90 +2,60 @@
 
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Search, MapPin, Filter, ShoppingBag, Star, Leaf, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getProducts, toggleFavorite, addToCart } from "@/lib/api"
+import { getProducts, toggleFavorite, getCategories } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 import { useAuth } from "@/hooks/use-auth"
 import { resolveMediaUrl } from "@/lib/media"
-import { ProductCard } from "@/components/product-card"
 
 
 const CATEGORIES = ["Tous", "Légumes", "Fruits", "Produits laitiers", "Œufs & Volaille", "Produits apicoles"]
-const DEFAULT_PRICE_LIMIT = 20000
 
 type ApiProduct = {
   id: number
   name: string
   description?: string
   price: number | string
-  old_price?: number | string
   stock?: number
   category?: number
   category_name?: string
   owner?: number
   owner_name?: string
   is_favorite?: boolean
+  old_price?: number | string
   images?: { image: string }[]
-  unit?: string
-}
-
-const UNIT_LABELS: Record<string, string> = {
-  kg: "kg",
-  g: "g",
-  piece: "pièce",
-  liter: "L",
-  bunch: "botte",
-  bag: "sac",
-  box: "boîte",
 }
 
 export default function ProductsPage() {
   const { me } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
+  const [categories, setCategories] = useState<any[]>([])
   const [selectedCategory, setSelectedCategory] = useState("Tous")
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, DEFAULT_PRICE_LIMIT])
-  const [priceLimit, setPriceLimit] = useState(DEFAULT_PRICE_LIMIT)
+  const [priceRange, setPriceRange] = useState([0, 50000])
   const [sortBy, setSortBy] = useState("popular")
   const [showFilters, setShowFilters] = useState(false)
   const [promoOnly, setPromoOnly] = useState(false)
   const [apiProducts, setApiProducts] = useState<ApiProduct[] | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const priceStep = Math.max(1, Math.round(priceLimit / 200))
-
-  const updatePriceFilters = (products: ApiProduct[] | null) => {
-    if (!products || products.length === 0) {
-      setPriceLimit(DEFAULT_PRICE_LIMIT)
-      setPriceRange([0, DEFAULT_PRICE_LIMIT])
-      return
-    }
-
-    const maxPriceFromProducts = Math.max(
-      DEFAULT_PRICE_LIMIT,
-      ...products.map((product) => Number(product.price) || 0),
-    )
-
-    setPriceLimit(maxPriceFromProducts)
-    setPriceRange([0, maxPriceFromProducts])
-  }
-
   useEffect(() => {
     let cancelled = false
     async function load() {
       try {
         setLoading(true)
-        const data = await getProducts({ is_active: true })
+        const [productsData, categoriesData] = await Promise.all([
+          getProducts(),
+          getCategories()
+        ])
         if (!cancelled) {
-          const products = Array.isArray(data?.results) ? data.results : data
-          setApiProducts(products)
-          updatePriceFilters(products)
+          setApiProducts(Array.isArray(productsData?.results) ? productsData.results : productsData)
+          const resolvedCategories = Array.isArray(categoriesData?.results) ? categoriesData.results : categoriesData
+          setCategories(resolvedCategories || [])
         }
       } catch {
-        if (!cancelled) {
-          setApiProducts(null)
-          updatePriceFilters(null)
-        }
+        if (!cancelled) setApiProducts(null)
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -98,25 +68,20 @@ export default function ProductsPage() {
 
   const sourceProducts = useMemo(() => {
     if (apiProducts && apiProducts.length) {
-      return apiProducts.map((p) => {
-        const imageUrl = resolveMediaUrl(p.images?.[0]?.image) || "/placeholder.svg"
-        return {
-          id: p.id,
-          name: p.name,
-          price: Number(p.price),
-          old_price: p.old_price ? Number(p.old_price) : undefined,
-          rating: 0, // Default rating
-          reviews: 0,
-          image: imageUrl,
-          category: p.category_name || "Divers",
-          seller: p.owner_name || "Vendeur",
-          distance: "0 km",
-          fresh: true,
-          is_favorite: p.is_favorite || false,
-          unit: p.unit,
-          stock: p.stock,
-        }
-      })
+      return apiProducts.map((p) => ({
+        id: p.id,
+        name: p.name,
+        price: Number(p.price),
+        old_price: p.old_price ? Number(p.old_price) : undefined,
+        rating: 0, // Default rating
+        reviews: 0,
+        image: p.images && p.images.length > 0 ? resolveMediaUrl(p.images[0].image) : "/placeholder.svg",
+        category: p.category_name || "Divers",
+        seller: p.owner_name || "Vendeur",
+        distance: "0 km",
+        fresh: true,
+        is_favorite: p.is_favorite || false,
+      }))
     }
     return []
   }, [apiProducts])
@@ -248,17 +213,28 @@ export default function ProductsPage() {
               <div>
                 <h4 className="font-semibold text-foreground mb-3 text-sm">Catégories</h4>
                 <div className="space-y-2">
-                  {CATEGORIES.map((cat) => (
-                    <label key={cat} className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="category"
+                      value="Tous"
+                      checked={selectedCategory === "Tous"}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm text-foreground">Tous</span>
+                  </label>
+                  {categories.map((cat) => (
+                    <label key={cat.id} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
                         name="category"
-                        value={cat}
-                        checked={selectedCategory === cat}
+                        value={cat.name}
+                        checked={selectedCategory === cat.name}
                         onChange={(e) => setSelectedCategory(e.target.value)}
                         className="w-4 h-4"
                       />
-                      <span className="text-sm text-foreground">{cat}</span>
+                      <span className="text-sm text-foreground">{cat.name}</span>
                     </label>
                   ))}
                 </div>
@@ -271,8 +247,8 @@ export default function ProductsPage() {
                 <input
                   type="range"
                   min="0"
-                  max={priceLimit}
-                  step={priceStep}
+                  max="50000"
+                  step="100"
                   value={priceRange[1]}
                   onChange={(e) => setPriceRange([priceRange[0], Number.parseInt(e.target.value)])}
                   className="w-full"
@@ -288,17 +264,28 @@ export default function ProductsPage() {
             <div>
               <h3 className="font-semibold text-foreground mb-4">Catégories</h3>
               <div className="space-y-2">
-                {CATEGORIES.map((cat) => (
-                  <label key={cat} className="flex items-center gap-2 cursor-pointer group">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="radio"
+                    name="category"
+                    value="Tous"
+                    checked={selectedCategory === "Tous"}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-4 h-4 accent-primary"
+                  />
+                  <span className="text-sm text-foreground group-hover:text-primary transition">Tous</span>
+                </label>
+                {categories.map((cat) => (
+                  <label key={cat.id} className="flex items-center gap-2 cursor-pointer group">
                     <input
                       type="radio"
                       name="category"
-                      value={cat}
-                      checked={selectedCategory === cat}
+                      value={cat.name}
+                      checked={selectedCategory === cat.name}
                       onChange={(e) => setSelectedCategory(e.target.value)}
                       className="w-4 h-4 accent-primary"
                     />
-                    <span className="text-sm text-foreground group-hover:text-primary transition">{cat}</span>
+                    <span className="text-sm text-foreground group-hover:text-primary transition">{cat.name}</span>
                   </label>
                 ))}
               </div>
@@ -313,8 +300,8 @@ export default function ProductsPage() {
                 <input
                   type="range"
                   min="0"
-                  max={priceLimit}
-                  step={priceStep}
+                  max="50000"
+                  step="500"
                   value={priceRange[1]}
                   onChange={(e) => setPriceRange([priceRange[0], Number.parseFloat(e.target.value)])}
                   className="w-full accent-primary"
@@ -323,18 +310,18 @@ export default function ProductsPage() {
                   <input
                     type="number"
                     min="0"
-                    max={priceLimit}
+                    max="50000"
                     value={priceRange[0]}
                     onChange={(e) => setPriceRange([Number.parseFloat(e.target.value), priceRange[1]])}
-                    className="w-16 px-2 py-1 bg-input rounded text-foreground"
+                    className="w-20 px-2 py-1 bg-input rounded text-foreground"
                   />
                   <input
                     type="number"
                     min="0"
-                    max={priceLimit}
+                    max="50000"
                     value={priceRange[1]}
                     onChange={(e) => setPriceRange([priceRange[0], Number.parseFloat(e.target.value)])}
-                    className="w-16 px-2 py-1 bg-input rounded text-foreground"
+                    className="w-20 px-2 py-1 bg-input rounded text-foreground"
                   />
                 </div>
               </div>
@@ -346,7 +333,7 @@ export default function ProductsPage() {
               onClick={() => {
                 setSearchQuery("")
                 setSelectedCategory("Tous")
-                setPriceRange([0, priceLimit])
+                setPriceRange([0, 50000])
                 setPromoOnly(false)
               }}
             >
@@ -363,40 +350,88 @@ export default function ProductsPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
-              {filteredProducts.map((product, index) => (
-                <div
-                  key={product.id}
-                  className="animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <ProductCard
-                    product={{
-                      id: product.id,
-                      name: product.name,
-                      price: product.price,
-                      old_price: product.old_price,
-                      unit: product.unit,
-                      image: product.image,
-                      category: product.category,
-                      seller: product.seller,
-                      isFavorite: product.is_favorite,
-                      fresh: product.fresh,
-                      stock: product.stock
-                    }}
-                    onToggleFavorite={(e) => handleToggleFavorite(e, product.id)}
-                    onAddToCart={async (e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      try {
-                        await addToCart(product.id, 1)
-                        showToast("success", "Ajouté au panier", `${product.name} a été ajouté à votre panier`)
-                      } catch (error) {
-                        showToast("error", "Erreur", "Impossible d'ajouter au panier")
-                      }
-                    }}
-                  />
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProducts.map((product) => (
+                <Link key={product.id} href={`/products/${product.id}`}>
+                  <div className="bg-card rounded-lg border border-border overflow-hidden hover:border-primary/20 transition group cursor-pointer h-full flex flex-col">
+                    {/* Product Image */}
+                    <div className="relative overflow-hidden bg-muted h-48 flex items-center justify-center">
+                      <Image
+                        src={product.image || "/placeholder.svg"}
+                        alt={product.name}
+                        fill
+                        className="object-cover transition duration-300 group-hover:scale-105"
+                        sizes="(max-width: 1024px) 50vw, 33vw"
+                      />
+                      <div className="absolute top-3 right-3 flex flex-col items-end gap-2">
+                        {product.fresh && (
+                          <div className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                            <Leaf className="w-3 h-3" />
+                            Frais
+                          </div>
+                        )}
+                        {product.old_price && product.old_price > product.price && (
+                          <div className="bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-xs font-semibold">
+                            -{Math.round(((product.old_price - product.price) / product.old_price) * 100)}%
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => handleToggleFavorite(e, product.id)}
+                        className={`absolute top-3 left-3 p-2 rounded-full transition ${product.is_favorite
+                          ? "bg-red-500 text-white hover:bg-red-600"
+                          : "bg-white/80 text-gray-600 hover:bg-white hover:text-red-500"
+                          }`}
+                      >
+                        <Heart className={`w-4 h-4 ${product.is_favorite ? "fill-current" : ""}`} />
+                      </button>
+                    </div>
+
+                    {/* Product Info */}
+                    <div className="p-4 flex-1 flex flex-col">
+                      <div className="mb-3 flex-1">
+                        <h3 className="font-semibold text-foreground group-hover:text-primary transition line-clamp-2">
+                          {product.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-1">{product.seller}</p>
+                      </div>
+
+                      {/* Rating */}
+                      <div className="flex items-center gap-1 mb-3">
+                        <div className="flex">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3.5 h-3.5 ${i < Math.floor(product.rating) ? "fill-accent text-accent" : "text-muted"}`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs text-muted-foreground">({product.reviews})</span>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-lg font-bold text-primary">{Number(product.price).toFixed(0)} FCFA</p>
+                            {product.old_price && product.old_price > product.price && (
+                              <p className="text-sm text-muted-foreground line-through">
+                                {Number(product.old_price).toFixed(0)} FCFA
+                              </p>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                            <MapPin className="w-3 h-3" />
+                            {product.distance}km
+                          </p>
+                        </div>
+                        <Button size="sm" className="bg-primary hover:bg-primary/90">
+                          <ShoppingBag className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
               ))}
             </div>
 
@@ -408,7 +443,7 @@ export default function ProductsPage() {
                   onClick={() => {
                     setSearchQuery("")
                     setSelectedCategory("Tous")
-                    setPriceRange([0, priceLimit])
+                    setPriceRange([0, 20])
                   }}
                 >
                   Réinitialiser les filtres

@@ -5,10 +5,10 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, CheckCircle2, Leaf } from "lucide-react"
+import { getCart, createOrder, initiateMobilePayment, getDeliveryFee } from "@/lib/api"
+import { MapPin, Navigation, Loader2, ArrowLeft, CheckCircle2, Leaf } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { showToast } from "@/components/toast-notification"
-import { getCart, createOrder, initiateMobilePayment } from "@/lib/api"
 
 type CheckoutStep = "shipping" | "payment" | "confirmation"
 
@@ -37,6 +37,11 @@ export default function CheckoutPage() {
     paymentReference: "",
   })
 
+  // Geolocation & Shipping
+  const [shippingFee, setShippingFee] = useState<number | null>(null)
+  const [distance, setDistance] = useState<number | null>(null)
+  const [locationLoading, setLocationLoading] = useState(false)
+
   useEffect(() => {
     loadCart()
   }, [])
@@ -62,8 +67,42 @@ export default function CheckoutPage() {
     }))
   }
 
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      showToast("error", "Géolocalisation non supportée", "Votre navigateur ne supporte pas la géolocalisation.")
+      return
+    }
+
+    setLocationLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords
+          const feeData = await getDeliveryFee(latitude, longitude)
+          setShippingFee(feeData.fee)
+          setDistance(feeData.distance_km)
+          showToast("success", "Position détectée", `Frais de livraison calculés pour ${feeData.distance_km} km.`)
+        } catch (error) {
+          console.error("Delivery fee error:", error)
+          showToast("error", "Erreur", "Impossible de calculer les frais de livraison.")
+        } finally {
+          setLocationLoading(false)
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error)
+        showToast("error", "Erreur de localisation", "Veuillez autoriser l'accès à votre position.")
+        setLocationLoading(false)
+      }
+    )
+  }
+
   const handleShippingSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (shippingFee === null) {
+      showToast("warning", "Livraison", "Veuillez détecter votre position pour calculer les frais de livraison.")
+      return
+    }
     showToast("success", "Adresse confirmée", "Votre adresse de livraison a été enregistrée")
     setStep("payment")
   }
@@ -106,9 +145,9 @@ export default function CheckoutPage() {
 
   if (!cart) return null
 
-  const subtotal = cart.total_price || 0
-  const shipping = subtotal > 50 ? 0 : 5.0
-  const tax = subtotal * 0.1 // 10% tax
+  const subtotal = Number(cart.total_price) || 0
+  const shipping = shippingFee !== null ? shippingFee : 0
+  const tax = subtotal * 0.05 // 5% tax
   const total = subtotal + shipping + tax
 
   return (
@@ -265,6 +304,42 @@ export default function CheckoutPage() {
                         <option value="CH">Suisse</option>
                         <option value="LU">Luxembourg</option>
                       </select>
+                    </div>
+
+                    {/* Geolocation Section */}
+                    <div className="pt-4 border-t border-border mt-6">
+                      <p className="text-sm font-medium text-foreground mb-3">Calcul des frais de livraison</p>
+                      <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                            <MapPin className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-emerald-800">Localisation automatique</p>
+                            <p className="text-xs text-emerald-600">Pour calculer les frais au plus précis</p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={detectLocation}
+                          disabled={locationLoading}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                          {locationLoading ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Navigation className="w-4 h-4 mr-2" />
+                          )}
+                          {shippingFee !== null ? "Recalculer" : "Détecter"}
+                        </Button>
+                      </div>
+                      {distance !== null && (
+                        <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Distance calculée: <span className="font-bold">{distance} km</span> des producteurs.
+                        </p>
+                      )}
                     </div>
                   </div>
 

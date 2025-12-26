@@ -64,92 +64,24 @@ export default function SignupPage() {
       router.replace("/")
       router.refresh?.()
     } catch (err: any) {
-      console.error("Registration error:", err)
+      console.error(err)
+      // Gestion des erreurs API spécifiques
+      if (err.response && err.response.data) {
+        const apiErrors = err.response.data
+        const formErrors: Record<string, string> = {}
 
-      // Parse error message from API
-      let errorMessage = "Une erreur est survenue. Veuillez réessayer."
-      const formErrors: Record<string, string> = {}
+        if (apiErrors.username) formErrors.username = Array.isArray(apiErrors.username) ? apiErrors.username[0] : apiErrors.username
+        if (apiErrors.email) formErrors.email = Array.isArray(apiErrors.email) ? apiErrors.email[0] : apiErrors.email
+        if (apiErrors.password) formErrors.password = Array.isArray(apiErrors.password) ? apiErrors.password[0] : apiErrors.password
 
-      if (err.message) {
-        try {
-          // Try to parse error message as JSON (from Django API)
-          const errorData = JSON.parse(err.message)
+        setErrors(formErrors)
 
-          // Handle username errors
-          if (errorData.username) {
-            const usernameError = Array.isArray(errorData.username) ? errorData.username[0] : errorData.username
-            if (usernameError.includes("already exists") || usernameError.includes("already taken")) {
-              formErrors.username = "Ce nom d'utilisateur est déjà utilisé."
-            } else if (usernameError.includes("required")) {
-              formErrors.username = "Le nom d'utilisateur est requis."
-            } else if (usernameError.includes("invalid")) {
-              formErrors.username = "Ce nom d'utilisateur n'est pas valide."
-            } else {
-              formErrors.username = usernameError
-            }
-          }
-
-          // Handle email errors
-          if (errorData.email) {
-            const emailError = Array.isArray(errorData.email) ? errorData.email[0] : errorData.email
-            if (emailError.includes("already exists") || emailError.includes("already registered")) {
-              formErrors.email = "Cet email est déjà utilisé. Essayez de vous connecter."
-            } else if (emailError.includes("invalid")) {
-              formErrors.email = "L'adresse email n'est pas valide."
-            } else if (emailError.includes("required")) {
-              formErrors.email = "L'email est requis."
-            } else {
-              formErrors.email = emailError
-            }
-          }
-
-          // Handle password errors
-          if (errorData.password) {
-            const passwordError = Array.isArray(errorData.password) ? errorData.password[0] : errorData.password
-            if (passwordError.includes("too common")) {
-              formErrors.password = "Ce mot de passe est trop courant. Choisissez un mot de passe plus sécurisé (ex: MonMotDePasse2025!)."
-            } else if (passwordError.includes("too short")) {
-              formErrors.password = "Ce mot de passe est trop court. Minimum 8 caractères."
-            } else if (passwordError.includes("entirely numeric")) {
-              formErrors.password = "Le mot de passe ne peut pas être entièrement numérique."
-            } else if (passwordError.includes("too similar")) {
-              formErrors.password = "Le mot de passe est trop similaire à vos informations personnelles."
-            } else if (passwordError.includes("required")) {
-              formErrors.password = "Le mot de passe est requis."
-            } else {
-              formErrors.password = passwordError
-            }
-          }
-
-          // Handle first_name errors
-          if (errorData.first_name) {
-            const firstNameError = Array.isArray(errorData.first_name) ? errorData.first_name[0] : errorData.first_name
-            formErrors.firstName = firstNameError.includes("required") ? "Le prénom est requis." : firstNameError
-          }
-
-          // Handle last_name errors
-          if (errorData.last_name) {
-            const lastNameError = Array.isArray(errorData.last_name) ? errorData.last_name[0] : errorData.last_name
-            formErrors.lastName = lastNameError.includes("required") ? "Le nom est requis." : lastNameError
-          }
-
-          // Handle generic non_field_errors
-          if (errorData.non_field_errors) {
-            const nonFieldError = Array.isArray(errorData.non_field_errors) ? errorData.non_field_errors[0] : errorData.non_field_errors
-            errorMessage = nonFieldError
-          }
-
-          if (Object.keys(formErrors).length > 0) {
-            setErrors(formErrors)
-            errorMessage = "Veuillez corriger les erreurs indiquées dans le formulaire."
-          }
-        } catch {
-          // If not JSON, use the error message as is
-          errorMessage = err.message
+        if (Object.keys(formErrors).length > 0) {
+          showToast("error", "Erreur d'inscription", "Veuillez corriger les erreurs indiquées")
+          return
         }
       }
-
-      showToast("error", "Erreur d'inscription", errorMessage)
+      showToast("error", "Échec de l'inscription", "Une erreur est survenue. Veuillez réessayer.")
     } finally {
       setPending(false)
     }

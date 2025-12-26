@@ -3,19 +3,16 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Upload, Loader2, Plus, X } from "lucide-react"
+import { ArrowLeft, Upload, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { showToast } from "@/components/toast-notification"
-import { createProduct, getCategories, createCategory } from "@/lib/api"
+import { createProduct, getCategories } from "@/lib/api"
 
 export default function CreateProductPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<any[]>([])
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [showCategoryDialog, setShowCategoryDialog] = useState(false)
-  const [newCategoryName, setNewCategoryName] = useState("")
-  const [creatingCategory, setCreatingCategory] = useState(false)
 
   const [formData, setFormData] = useState({
     name: "",
@@ -23,7 +20,6 @@ export default function CreateProductPage() {
     price: "",
     old_price: "",
     stock: "",
-    unit: "piece",
     category: "",
     fresh: true,
     image: null as File | null
@@ -39,32 +35,6 @@ export default function CreateProductPage() {
       setCategories(data.results || data)
     } catch (error) {
       console.error("Error loading categories:", error)
-    }
-  }
-
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) {
-      showToast("error", "Erreur", "Veuillez entrer un nom de catégorie")
-      return
-    }
-
-    try {
-      setCreatingCategory(true)
-      const newCategory = await createCategory(newCategoryName.trim())
-      showToast("success", "Catégorie créée", `La catégorie "${newCategory.name}" a été créée`)
-
-      // Reload categories and select the new one
-      await loadCategories()
-      setFormData(prev => ({ ...prev, category: newCategory.id.toString() }))
-
-      // Close dialog and reset
-      setShowCategoryDialog(false)
-      setNewCategoryName("")
-    } catch (error: any) {
-      console.error("Error creating category:", error)
-      showToast("error", "Erreur", error.message || "Impossible de créer la catégorie")
-    } finally {
-      setCreatingCategory(false)
     }
   }
 
@@ -102,7 +72,6 @@ export default function CreateProductPage() {
       data.append("price", formData.price)
       if (formData.old_price) data.append("old_price", formData.old_price)
       data.append("stock", formData.stock)
-      data.append("unit", formData.unit)
       if (formData.category) data.append("category", formData.category)
       data.append("fresh", formData.fresh.toString())
       data.append("is_active", "true")
@@ -242,25 +211,6 @@ export default function CreateProductPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Unité *</label>
-                <select
-                  name="unit"
-                  value={formData.unit}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition"
-                >
-                  <option value="kg">Kilogramme (kg)</option>
-                  <option value="g">Gramme (g)</option>
-                  <option value="piece">Pièce</option>
-                  <option value="liter">Litre (L)</option>
-                  <option value="bunch">Botte</option>
-                  <option value="bag">Sac</option>
-                  <option value="box">Boîte</option>
-                </select>
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium text-foreground mb-2">Catégorie *</label>
                 <select
                   name="category"
@@ -276,14 +226,6 @@ export default function CreateProductPage() {
                     </option>
                   ))}
                 </select>
-                <button
-                  type="button"
-                  onClick={() => setShowCategoryDialog(true)}
-                  className="mt-2 text-sm text-primary hover:text-primary/80 flex items-center gap-1 transition"
-                >
-                  <Plus className="w-4 h-4" />
-                  Nouvelle catégorie
-                </button>
               </div>
 
               <div className="flex items-center space-x-2 pt-8">
@@ -312,69 +254,6 @@ export default function CreateProductPage() {
             </div>
           </form>
         </div>
-
-        {/* Category Creation Dialog */}
-        {showCategoryDialog && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-card rounded-lg border border-border p-6 max-w-md w-full">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Créer une nouvelle catégorie</h2>
-                <button
-                  onClick={() => {
-                    setShowCategoryDialog(false)
-                    setNewCategoryName("")
-                  }}
-                  className="text-muted-foreground hover:text-foreground transition"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Nom de la catégorie *</label>
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !creatingCategory) {
-                        e.preventDefault()
-                        handleCreateCategory()
-                      }
-                    }}
-                    placeholder="Ex: Produits transformés"
-                    className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition"
-                    autoFocus
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setShowCategoryDialog(false)
-                      setNewCategoryName("")
-                    }}
-                    disabled={creatingCategory}
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handleCreateCategory}
-                    disabled={creatingCategory || !newCategoryName.trim()}
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    {creatingCategory && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Créer la catégorie
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

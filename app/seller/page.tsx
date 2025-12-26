@@ -2,59 +2,40 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { BarChart3, Package, ShoppingCart, Users, TrendingUp, Plus, Eye, Edit, Trash2, Leaf, PauseCircle, PlayCircle, Mail } from "lucide-react"
+import Image from "next/image"
+import { BarChart3, Package, ShoppingCart, Users, TrendingUp, Plus, Eye, Edit, Trash2, Leaf, PauseCircle, PlayCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getSellerStats, getProducts, updateProduct, deleteProduct, getMessages } from "@/lib/api"
+import { getSellerStats, getProducts, updateProduct, deleteProduct } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
-import { resolveMediaUrl } from "@/lib/media"
+import { SalesChart } from "@/components/sales-chart"
+import { FileDown, Printer } from "lucide-react"
+import jsPDF from "jspdf"
 
 export default function SellerDashboard() {
   const router = useRouter()
-  const { me, loading: authLoading } = useAuth()
+  const { me: user } = useAuth()
   const [stats, setStats] = useState<any>(null)
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [unreadMessages, setUnreadMessages] = useState(0)
 
   useEffect(() => {
-    // Redirect if not authenticated or not a seller
-    if (!authLoading && !me) {
-      router.push("/auth/login")
-      return
-    }
-
-    if (!authLoading && me && !me.is_seller) {
-      showToast("error", "Accès refusé", "Vous devez être vendeur pour accéder à cette page")
-      router.push("/")
-      return
-    }
-
-    if (me && me.is_seller) {
+    if (user) {
       loadDashboard()
     }
-  }, [me, authLoading, router])
+  }, [user])
 
   const loadDashboard = async () => {
     try {
       setLoading(true)
       const [statsData, productsData] = await Promise.all([
-        getSellerStats(),
-        getProducts({ owner: me?.id }),
+        getSellerStats().catch(() => ({ sales_this_month: 0, active_orders: 0, total_products: 0, total_customers: 0, daily_sales: [] })),
+        user?.id ? getProducts({ owner: user.id }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] })
       ])
-      setStats(statsData)
-      setProducts(Array.isArray(productsData) ? productsData : productsData.results || [])
 
-      // Load unread messages count
-      try {
-        const messagesData = await getMessages("received")
-        const messages = Array.isArray(messagesData) ? messagesData : messagesData.results || []
-        const unread = messages.filter((msg: any) => !msg.is_read).length
-        setUnreadMessages(unread)
-      } catch (error) {
-        console.error("Error loading messages:", error)
-      }
+      setStats(statsData)
+      setProducts(productsData.results || [])
     } catch (error) {
       console.error("Error loading dashboard:", error)
       showToast("error", "Erreur", "Impossible de charger le tableau de bord")
@@ -86,7 +67,32 @@ export default function SellerDashboard() {
     }
   }
 
-  if (authLoading || loading) {
+  const generateReport = () => {
+    const doc = new jsPDF()
+    doc.setFontSize(20)
+    doc.text("Rapport de Ventes - D-AGRI", 20, 20)
+    doc.setFontSize(12)
+    doc.text(`Vendeur: ${user?.username}`, 20, 30)
+    doc.text(`Ventes totales: ${stats?.total_sales || 0} FCFA`, 20, 40)
+    doc.text(`Nombre de produits: ${products.length}`, 20, 50)
+    doc.save("rapport-ventes.pdf")
+    showToast("success", "PDF Généré", "Le rapport a été téléchargé")
+  }
+
+  const generateShippingLabel = (product: any) => {
+    const doc = new jsPDF()
+    doc.rect(20, 20, 100, 60)
+    doc.setFontSize(16)
+    doc.text("ETIQUETTE D'EXPÉDITION", 30, 35)
+    doc.setFontSize(10)
+    doc.text(`Produit: ${product.name}`, 30, 45)
+    doc.text(`Vendeur: ${user?.username}`, 30, 55)
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 30, 65)
+    doc.save(`label-${product.id}.pdf`)
+    showToast("success", "Label Généré", "L'étiquette est prête")
+  }
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -97,14 +103,9 @@ export default function SellerDashboard() {
     )
   }
 
-  // Don't render if not authenticated or not a seller (will redirect in useEffect)
-  if (!me || !me.is_seller) {
-    return null
-  }
-
   const statsCards = [
-    { label: "Ventes ce mois", value: `${stats?.total_sales || 0} FCFA`, icon: TrendingUp },
-    { label: "Commandes", value: stats?.total_orders || 0, icon: ShoppingCart },
+    { label: "Ventes ce mois", value: `${stats?.sales_this_month || 0} FCFA`, icon: TrendingUp },
+    { label: "Commandes Actives", value: stats?.active_orders || 0, icon: ShoppingCart },
     { label: "Produits", value: stats?.total_products || products.length, icon: Package },
     { label: "Clients", value: stats?.total_customers || 0, icon: Users },
   ]
@@ -122,17 +123,6 @@ export default function SellerDashboard() {
           </Link>
 
           <div className="flex items-center gap-2">
-            <Link href="/messages">
-              <Button variant="ghost" className="relative">
-                <Mail className="w-4 h-4 mr-2" />
-                Messages
-                {unreadMessages > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {unreadMessages > 9 ? '9+' : unreadMessages}
-                  </span>
-                )}
-              </Button>
-            </Link>
             <Link href="/">
               <Button variant="ghost">
                 Retour à l'accueil
@@ -151,7 +141,41 @@ export default function SellerDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Tableau de bord vendeur</h1>
-          <p className="text-muted-foreground">Bienvenue {me?.username || 'Vendeur'}</p>
+          <p className="text-muted-foreground">Bienvenue {user?.username || 'Vendeur'}</p>
+        </div>
+
+        {/* Analytics Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          <div className="lg:col-span-2 bg-card rounded-lg border border-border p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-foreground">Performance des ventes</h2>
+              <Button variant="outline" size="sm" onClick={generateReport}>
+                <FileDown className="w-4 h-4 mr-2" />
+                Télécharger le rapport
+              </Button>
+            </div>
+            <SalesChart data={stats?.daily_sales || []} />
+          </div>
+
+          <div className="bg-card rounded-lg border border-border p-6">
+            <h2 className="text-xl font-bold text-foreground mb-6">Alertes Stock</h2>
+            <div className="space-y-4">
+              {products.filter(p => p.stock < 10).slice(0, 5).map(p => (
+                <div key={p.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100">
+                  <div>
+                    <p className="text-sm font-bold text-red-800">{p.name}</p>
+                    <p className="text-xs text-red-600">Stock critique: {p.stock}</p>
+                  </div>
+                  <Link href={`/seller/products/${p.id}`}>
+                    <Button size="sm" variant="ghost" className="text-red-700 hover:bg-red-100">Réappro.</Button>
+                  </Link>
+                </div>
+              ))}
+              {products.filter(p => p.stock < 10).length === 0 && (
+                <p className="text-sm text-center text-muted-foreground py-10 italic">Aucune alerte stock</p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -212,12 +236,11 @@ export default function SellerDashboard() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           <div className="relative w-10 h-10 bg-muted rounded overflow-hidden flex-shrink-0">
-                            <img
-                              src={resolveMediaUrl(product.images?.[0]?.image) || "/placeholder.svg"}
+                            <Image
+                              src={product.images?.[0]?.image || "/placeholder.svg"}
                               alt={product.name}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                              decoding="async"
+                              fill
+                              className="object-cover"
                             />
                           </div>
                           <span className="font-medium text-foreground">{product.name}</span>
@@ -268,6 +291,9 @@ export default function SellerDashboard() {
                             ) : (
                               <PlayCircle className="w-4 h-4 text-green-600" />
                             )}
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => generateShippingLabel(product)}>
+                            <Printer className="w-4 h-4 text-primary" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleDelete(product.id)}>
                             <Trash2 className="w-4 h-4 text-red-600" />

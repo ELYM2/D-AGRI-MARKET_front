@@ -101,16 +101,7 @@ export default function SellerProfilePage() {
               </div>
 
               <div>
-                <div className="flex-1 space-y-2">
-                  <div className="flex flex-col md:flex-row md:items-center gap-4">
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{seller.business_name || seller.username}</h1>
-                    {seller.verified && (
-                      // Assuming there should be a verified badge or similar here
-                      // For now, leaving it empty as the instruction snippet was incomplete
-                      null
-                    )}
-                  </div>
-                </div>
+                <h1 className="text-3xl font-bold text-foreground">{seller.business_name || seller.username}</h1>
                 <p className="text-muted-foreground">{seller.city}</p>
 
                 <div className="flex items-center gap-4 mt-3">

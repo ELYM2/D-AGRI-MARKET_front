@@ -11,7 +11,12 @@ export function resolveMediaUrl(path?: string | null): string | null {
     return path
   }
 
-  const normalized = path.startsWith("/") ? path : `/${path}`
-  const mediaPath = normalized.startsWith("/media") ? normalized : `${MEDIA_PREFIX}${normalized}`
-  return `${API_BASE_URL}${mediaPath}`
+  // Remove duplicate media prefix if present
+  let cleanPath = path.startsWith("/") ? path.substring(1) : path
+  if (cleanPath.startsWith("media/")) {
+    cleanPath = cleanPath.substring(6)
+  }
+
+  const result = `${API_BASE_URL}/media/${cleanPath}`
+  return result.replace(/\/+/g, "/").replace(":/", "://")
 }

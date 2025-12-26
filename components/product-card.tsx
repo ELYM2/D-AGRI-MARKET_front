@@ -1,147 +1,96 @@
 "use client"
 
 import Link from "next/link"
-import { ShoppingBag, Heart, Leaf } from "lucide-react"
+import { ShoppingCart, Heart, Star, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { motion } from "framer-motion"
 import { resolveMediaUrl } from "@/lib/media"
 
-type Product = {
-  id: number
-  name: string
-  price: number
-  old_price?: number
-  unit?: string
-  image: string
-  category: string
-  seller: string
-  isFavorite?: boolean
-  fresh?: boolean
-  stock?: number // Added stock property
-}
-
-const UNIT_LABELS: Record<string, string> = {
-  kg: "kg",
-  g: "g",
-  piece: "pièce",
-  liter: "L",
-  bunch: "botte",
-  bag: "sac",
-  box: "boîte",
-}
-
 interface ProductCardProps {
-  product: Product
-  onToggleFavorite: (e: React.MouseEvent) => void
-  onAddToCart: (e: React.MouseEvent) => void
-  isAddingToCart?: boolean
+    product: any
+    onAddToCart?: (e: React.MouseEvent) => void
 }
 
-export function ProductCard({ product, onToggleFavorite, onAddToCart, isAddingToCart }: ProductCardProps) {
-  const discount = product.old_price
-    ? Math.round(((product.old_price - product.price) / product.old_price) * 100)
-    : 0
+export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+    const imageUrl = product.images && product.images.length > 0
+        ? resolveMediaUrl(product.images[0].image) || "/fresh-vegetables-and-local-produce-market.jpg"
+        : "/fresh-vegetables-and-local-produce-market.jpg"
 
-  return (
-    <div
-      className="group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 h-full flex flex-col"
-    >
-      {/* Image Container */}
-      <div className="aspect-[4/3] overflow-hidden relative bg-muted/30">
-        <Link href={`/products/${product.id}`} className="block h-full cursor-pointer">
-          <img
-            src={product.image || "/placeholder.svg"}
-            alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-            loading="lazy"
-          />
-        </Link>
-
-        {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
-          {product.fresh && (
-            <span className="bg-emerald-500/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm shadow-sm tracking-wider uppercase">
-              <Leaf className="w-3 h-3" />
-              Frais
-            </span>
-          )}
-          {discount > 0 && (
-            <span className="bg-red-500/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm shadow-sm tracking-wider">
-              -{discount}%
-            </span>
-          )}
-        </div>
-
-        {/* Favorite Button */}
-        <button
-          onClick={onToggleFavorite}
-          className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all duration-300 z-10 ${product.isFavorite
-            ? "bg-white/90 text-red-500 shadow-sm scale-110"
-            : "bg-black/20 text-white hover:bg-white/90 hover:text-red-500 hover:scale-110 opacity-0 group-hover:opacity-100"
-            }`}
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            whileHover={{ y: -8 }}
+            className="group relative bg-card rounded-[2.5rem] border border-border/50 overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500"
         >
-          <Heart className={`w-4 h-4 ${product.isFavorite ? "fill-current" : ""}`} />
-        </button>
+            <Link href={`/products/${product.id}`} className="block">
+                <div className="relative aspect-square overflow-hidden">
+                    <motion.img
+                        whileHover={{ scale: 1.1 }}
+                        transition={{ duration: 0.6 }}
+                        src={imageUrl}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-        {/* Quick Add Overlay on Desktop */}
-        <div className="absolute inset-x-0 bottom-0 p-4 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 md:flex hidden justify-end">
-        </div>
-      </div>
+                    {/* Discount Badge */}
+                    {product.old_price && (
+                        <div className="absolute top-4 left-4 px-3 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-full">
+                            -{Math.round(((product.old_price - product.price) / product.old_price) * 100)}%
+                        </div>
+                    )}
 
-      {/* Content */}
-      <div className="p-4 flex flex-col flex-1">
-        <div className="mb-2">
-          <span className="text-[10px] font-bold tracking-wider text-emerald-600 bg-emerald-50/50 border border-emerald-100 px-2 py-1 rounded-full uppercase">
-            {product.category}
-          </span>
-        </div>
+                    {/* Quick Actions */}
+                    <div className="absolute top-4 right-4 flex flex-col gap-2 translate-x-12 group-hover:translate-x-0 transition-transform duration-500 delay-75">
+                        <Button size="icon" variant="secondary" className="rounded-full shadow-lg hover:scale-110 transition-transform">
+                            <Heart className="w-4 h-4" />
+                        </Button>
+                    </div>
+                </div>
 
-        <Link href={`/products/${product.id}`} className="block group-hover:text-primary transition-colors mb-1">
-          <h3 className="font-bold text-foreground text-lg line-clamp-1 leading-tight" title={product.name}>
-            {product.name}
-          </h3>
-        </Link>
+                <div className="p-6">
+                    <div className="flex items-center gap-1 text-amber-500 mb-3">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                            <Star key={s} className={`w-3.5 h-3.5 ${s <= 4 ? "fill-current" : ""}`} />
+                        ))}
+                        <span className="text-xs text-muted-foreground ml-1">(12)</span>
+                    </div>
 
-        <p className="text-xs text-muted-foreground mb-4 flex items-center gap-1">
-          Par <span className="font-medium text-foreground underline decoration-emerald-500/30 underline-offset-2 hover:decoration-emerald-500 transition-all">{product.seller}</span>
-        </p>
+                    <h3 className="font-bold text-lg text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-1">
+                        {product.name}
+                    </h3>
 
-        <div className="flex items-end justify-between mt-auto pt-2 border-t border-border/50">
-          <div className="flex flex-col">
-            {product.old_price && (
-              <span className="text-xs text-muted-foreground line-through mb-0.5">
-                {product.old_price.toLocaleString()} FCFA
-              </span>
-            )}
-            <div className="flex items-baseline gap-1">
-              <span className="font-extrabold text-xl text-emerald-600">
-                {product.price.toLocaleString()}
-              </span>
-              <span className="text-xs font-medium text-muted-foreground">FCFA</span>
-            </div>
-            {product.unit && (
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
-                / {UNIT_LABELS[product.unit] || product.unit}
-              </span>
-            )}
-          </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span className="line-clamp-1">{product.seller_city || "Producteur local"}</span>
+                    </div>
 
-          <Button
-            size="sm"
-            onClick={onAddToCart}
-            disabled={isAddingToCart || (product.stock === 0)}
-            className={`rounded-full w-10 h-10 p-0 shadow-lg shadow-emerald-500/20 transition-all duration-300 ${isAddingToCart
-              ? "bg-emerald-600/80 cursor-wait"
-              : "bg-primary hover:bg-emerald-600 hover:scale-110 active:scale-95"
-              }`}
-          >
-            {isAddingToCart ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <ShoppingBag className="w-5 h-5" />
-            )}
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
+                    <div className="flex items-center justify-between mt-auto">
+                        <div>
+                            <p className="text-2xl font-black text-primary">
+                                {product.price} <span className="text-sm font-bold">FCFA{product.unit ? ` / ${product.unit}` : ""}</span>
+                            </p>
+                            {product.old_price && (
+                                <p className="text-sm text-muted-foreground line-through">
+                                    {product.old_price} FCFA
+                                </p>
+                            )}
+                        </div>
+
+                        <Button
+                            onClick={(e) => {
+                                e.preventDefault()
+                                onAddToCart?.(e)
+                            }}
+                            className="rounded-2xl h-12 w-12 p-0 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 hover:scale-110 transition-all"
+                        >
+                            <ShoppingCart className="w-5 h-5" />
+                        </Button>
+                    </div>
+                </div>
+            </Link>
+        </motion.div>
+    )
 }

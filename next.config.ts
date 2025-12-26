@@ -9,23 +9,29 @@ const nextConfig: NextConfig = {
         port: "8000",
         pathname: "/media/**",
       },
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        port: "8000",
+        pathname: "/media/**",
+      },
     ],
-  },
-  turbopack: {
-    // Silence root detection warning in monorepo-ish setups
-    root: __dirname,
   },
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: "http://127.0.0.1:8000/api/:path*", // Proxy to Backend
+        destination: "http://localhost:8000/api/:path*",
       },
       {
         source: "/media/:path*",
-        destination: "http://127.0.0.1:8000/media/:path*", // Proxy Media files
+        destination: "http://localhost:8000/media/:path*",
       },
     ];
+  },
+  turbopack: {
+    // Silence root detection warning in monorepo-ish setups
+    root: __dirname,
   },
 };
 

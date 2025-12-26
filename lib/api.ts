@@ -1,13 +1,12 @@
 // API Configuration
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
-export const API_BASE_URL = baseUrl;
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 // Helper function for API calls with authentication
 async function apiCall(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const url = `${baseUrl}${endpoint}`;
+  const url = `${API_BASE_URL}${endpoint}`;
 
   const headers: HeadersInit = {
     ...options.headers,
@@ -134,30 +133,6 @@ export async function getCategories() {
     try {
       const errorData = JSON.parse(errorText);
       errorMessage = errorData.detail || errorData.message || errorMessage;
-    } catch {
-      // Use default error message
-    }
-    throw new Error(errorMessage);
-  }
-  return res.json();
-}
-
-export async function createCategory(name: string) {
-  const res = await apiCall("/api/categories/", {
-    method: "POST",
-    body: JSON.stringify({ name }),
-  });
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    let errorMessage = "Échec de la création de la catégorie";
-    try {
-      const errorData = JSON.parse(errorText);
-      if (errorData.name) {
-        errorMessage = Array.isArray(errorData.name) ? errorData.name[0] : errorData.name;
-      } else {
-        errorMessage = errorData.detail || errorData.message || errorMessage;
-      }
     } catch {
       // Use default error message
     }
@@ -398,11 +373,10 @@ export async function deleteProduct(id: number) {
 
 // Seller API
 export async function getSellerStats() {
-  const res = await apiCall("/api/seller/stats/", {
+  const res = await apiCall("/api/seller-stats/", {
     cache: "no-store",
   });
-
-  if (!res.ok) throw new Error("Failed to fetch seller stats");
+  if (!res.ok) throw new Error("Échec du chargement des statistiques vendeur");
   return res.json();
 }
 
@@ -425,8 +399,8 @@ export async function getSeller(id: number) {
 }
 
 // Messages API
-export async function getMessages(inbox: "received" | "sent" = "received") {
-  const res = await apiCall(`/api/messages/?inbox=${inbox}`, {
+export async function getMessages(box: "inbox" | "sent" = "inbox") {
+  const res = await apiCall(`/api/messages/?box=${box}`, {
     cache: "no-store",
   });
 
@@ -478,5 +452,14 @@ export async function markAllNotificationsAsRead() {
   });
 
   if (!res.ok) throw new Error("Failed to mark all notifications as read");
+  return res.json();
+}
+
+// Cart & Delivery
+export async function getDeliveryFee(latitude: number, longitude: number) {
+  const res = await apiCall(`/api/cart/calculate_delivery_fee/?latitude=${latitude}&longitude=${longitude}`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Impossible de calculer les frais de livraison");
   return res.json();
 }
