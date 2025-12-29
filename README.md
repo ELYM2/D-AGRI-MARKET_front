@@ -24,6 +24,12 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Dependencies
+
+- This project uses `next-themes` for color mode support; if you ever clone the repo, run `npm install` (or `yarn`) before starting the dev server so that `ThemeProvider` compiles correctly.
+- After installing/updating packages, consider running `npm audit fix` (or `npm audit fix --force` for deep fixes) to keep npm's vulnerability database clean.
+- The UI depends on third-party widgets (`@radix-ui/react-accordion`, `@radix-ui/react-alert-dialog`, `input-otp`, etc.), so always run `npm install` (or `yarn`) after cloning/updating before launching `npm run dev`.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More

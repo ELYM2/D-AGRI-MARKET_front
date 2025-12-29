@@ -27,6 +27,7 @@ export default function EditProductPage() {
     name: "",
     description: "",
     price: "",
+    old_price: "",
     stock: "",
     category: "",
     is_active: true,
@@ -65,10 +66,12 @@ export default function EditProductPage() {
   }, [productId, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = e.target
+    const target = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    const { name, type, value } = target
+    const fieldValue = type === "checkbox" ? (target as HTMLInputElement).checked : value
     setForm((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: fieldValue,
     }))
   }
 

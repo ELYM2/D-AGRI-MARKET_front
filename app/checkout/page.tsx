@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { getCart, createOrder, initiateMobilePayment, getDeliveryFee } from "@/lib/api"
@@ -10,14 +10,51 @@ import { MapPin, Navigation, Loader2, ArrowLeft, CheckCircle2, Leaf } from "luci
 import { Button } from "@/components/ui/button"
 import { showToast } from "@/components/toast-notification"
 
+interface CartProduct {
+  id: number
+  name: string
+  price: number | string
+  owner_name?: string
+}
+
+interface CartItem {
+  id: number
+  quantity: number
+  product: CartProduct
+}
+
+interface CartData {
+  items: CartItem[]
+  total_price?: number
+  total_items?: number
+}
+
 type CheckoutStep = "shipping" | "payment" | "confirmation"
+
+interface CheckoutFormState {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  address: string
+  city: string
+  postalCode: string
+  country: string
+  paymentMethod: "card" | "om" | "momo"
+  cardName: string
+  cardNumber: string
+  expiryDate: string
+  cvv: string
+  mobileMoneyNumber: string
+  paymentReference: string
+}
 
 export default function CheckoutPage() {
   const router = useRouter()
   const [step, setStep] = useState<CheckoutStep>("shipping")
-  const [cart, setCart] = useState<any>(null)
+  const [cart, setCart] = useState<CartData | null>(null)
   const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CheckoutFormState>({
     // Shipping
     firstName: "",
     lastName: "",
@@ -42,11 +79,7 @@ export default function CheckoutPage() {
   const [distance, setDistance] = useState<number | null>(null)
   const [locationLoading, setLocationLoading] = useState(false)
 
-  useEffect(() => {
-    loadCart()
-  }, [])
-
-  const loadCart = async () => {
+  const loadCart = useCallback(async () => {
     try {
       const data = await getCart()
       setCart(data)
@@ -57,7 +90,11 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error("Error loading cart:", error)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    loadCart()
+  }, [loadCart])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -135,9 +172,10 @@ export default function CheckoutPage() {
 
       showToast("success", "Paiement traité", "Votre commande a été confirmée avec succès")
       setStep("confirmation")
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating order:", error)
-      showToast("error", "Erreur", error.message || "Impossible de traiter la commande")
+      const message = error instanceof Error ? error.message : "Impossible de traiter la commande"
+      showToast("error", "Erreur", message)
     } finally {
       setLoading(false)
     }
@@ -145,7 +183,8 @@ export default function CheckoutPage() {
 
   if (!cart) return null
 
-  const subtotal = Number(cart.total_price) || 0
+  const cartItems = cart.items || []
+  const subtotal = cartItems.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0)
   const shipping = shippingFee !== null ? shippingFee : 0
   const tax = subtotal * 0.05 // 5% tax
   const total = subtotal + shipping + tax
@@ -550,7 +589,7 @@ export default function CheckoutPage() {
 
               <div className="space-y-3">
                 <div className="flex justify-between text-foreground">
-                  <span>{cart.total_items} articles</span>
+                  <span>{cartItems.length} articles</span>
                   <span>{subtotal.toFixed(0)} FCFA</span>
                 </div>
                 <div className="flex justify-between text-foreground">

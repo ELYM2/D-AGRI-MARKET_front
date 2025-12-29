@@ -1,8 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { User, Heart, Settings, LogOut, MapPin, Phone, Mail, Edit2, Leaf, Bell, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { showToast } from "@/components/toast-notification"
@@ -28,9 +27,18 @@ interface Order {
   status_display: string
 }
 
+interface FavoriteEntry {
+  id: number
+  product: {
+    id: number
+    name: string
+    price: number
+    owner_name?: string
+  }
+}
+
 
 export default function AccountPage() {
-  const router = useRouter()
   const { me, loading, logout, updateProfile } = useAuth()
   const [activeTab, setActiveTab] = useState<AccountTab>("profile")
   const [isEditing, setIsEditing] = useState(false)
@@ -45,19 +53,11 @@ export default function AccountPage() {
   })
   const [logoutPending, setLogoutPending] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
-  const [favorites, setFavorites] = useState<any[]>([])
-  const [orders, setOrders] = useState<any[]>([])
+  const [favorites, setFavorites] = useState<FavoriteEntry[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
   const [loadingData, setLoadingData] = useState(false)
 
-  useEffect(() => {
-    if (activeTab === "favorites") {
-      loadFavorites()
-    } else if (activeTab === "orders") {
-      loadOrders()
-    }
-  }, [activeTab])
-
-  const loadFavorites = async () => {
+  const loadFavorites = useCallback(async () => {
     try {
       setLoadingData(true)
       const data = await getFavorites()
@@ -67,9 +67,9 @@ export default function AccountPage() {
     } finally {
       setLoadingData(false)
     }
-  }
+  }, [])
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     try {
       setLoadingData(true)
       const data = await getOrders()
@@ -79,7 +79,15 @@ export default function AccountPage() {
     } finally {
       setLoadingData(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === "favorites") {
+      loadFavorites()
+    } else if (activeTab === "orders") {
+      loadOrders()
+    }
+  }, [activeTab, loadFavorites, loadOrders])
 
   useEffect(() => {
     if (me) {
@@ -139,19 +147,6 @@ export default function AccountPage() {
     } catch (error) {
       console.error("Logout error:", error)
       setLogoutPending(false)
-    }
-  }
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "delivered":
-        return "Livré"
-      case "processing":
-        return "En cours"
-      case "pending":
-        return "En attente"
-      default:
-        return status
     }
   }
 

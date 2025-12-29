@@ -399,7 +399,7 @@ export async function getSeller(id: number) {
 }
 
 // Messages API
-export async function getMessages(box: "inbox" | "sent" = "inbox") {
+export async function getMessages(box: "inbox" | "sent" | "received" = "inbox") {
   const res = await apiCall(`/api/messages/?box=${box}`, {
     cache: "no-store",
   });

@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Heart, Leaf, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getFavorites, toggleFavorite } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
+import Image from "next/image"
 import { resolveMediaUrl } from "@/lib/media"
 
 type Favorite = {
@@ -30,9 +31,10 @@ export default function FavoritesPage() {
         setLoading(true)
         const data = await getFavorites()
         setFavorites(Array.isArray(data) ? data : data?.results || [])
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error loading favorites", error)
-        showToast("error", "Erreur", error?.message || "Impossible de charger vos favoris")
+        const message = error instanceof Error ? error.message : "Impossible de charger vos favoris"
+        showToast("error", "Erreur", message)
       } finally {
         setLoading(false)
       }
@@ -47,8 +49,9 @@ export default function FavoritesPage() {
         setFavorites((prev) => prev.filter((f) => f.product.id !== productId))
         showToast("success", "Favori retiré", "Le produit a été retiré de vos favoris")
       }
-    } catch (error: any) {
-      showToast("error", "Erreur", error?.message || "Impossible de retirer des favoris")
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Impossible de retirer des favoris"
+      showToast("error", "Erreur", message)
     }
   }
 
@@ -94,12 +97,12 @@ export default function FavoritesPage() {
             {favorites.map((fav) => (
               <div key={fav.id} className="bg-card rounded-lg border border-border overflow-hidden flex flex-col">
                   <div className="relative h-44 bg-muted">
-                    <img
+                    <Image
                       src={resolveMediaUrl(fav.product.images?.[0]?.image) || "/placeholder.svg"}
                       alt={fav.product.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      decoding="async"
+                      fill
+                      className="object-cover"
+                      sizes="176px"
                     />
                     <button
                       onClick={() => handleRemove(fav.product.id)}

@@ -1,25 +1,42 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Leaf } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getCart, removeFromCart, updateCartQuantity, clearCart } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { resolveMediaUrl } from "@/lib/media"
+
+interface CartProduct {
+  id: number
+  name: string
+  price: number | string
+  owner_name?: string
+  images?: { image?: string }[]
+  stock?: number
+}
+
+interface CartItem {
+  id: number
+  quantity: number
+  product: CartProduct
+}
+
+interface CartData {
+  items: CartItem[]
+}
 
 export default function CartPage() {
   const router = useRouter()
-  const [cart, setCart] = useState<any>(null)
+  const [cart, setCart] = useState<CartData | null>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<number | null>(null)
 
-  useEffect(() => {
-    loadCart()
-  }, [])
-
-  const loadCart = async () => {
+  const loadCart = useCallback(async () => {
     try {
       setLoading(true)
       const data = await getCart()
@@ -31,7 +48,11 @@ export default function CartPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadCart()
+  }, [loadCart])
 
   const handleUpdateQuantity = async (itemId: number, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -99,7 +120,7 @@ export default function CartPage() {
   }
 
   const items = cart?.items || []
-  const subtotal = items.reduce((sum: number, item: any) => sum + Number(item.product.price) * item.quantity, 0)
+  const subtotal = items.reduce((sum: number, item: CartItem) => sum + Number(item.product.price) * item.quantity, 0)
   const shipping = subtotal > 50 ? 0 : 5.0
   const tax = subtotal * 0.1
   const total = subtotal + shipping + tax
@@ -152,12 +173,12 @@ export default function CartPage() {
                 <div key={item.id} className="bg-card rounded-lg border border-border p-4 flex gap-4">
                   {/* Product Image */}
                   <div className="relative w-24 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                    <img
+                    <Image
                       src={resolveMediaUrl(item.product.images?.[0]?.image) || "/placeholder.svg"}
                       alt={item.product.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      decoding="async"
+                      fill
+                      className="object-cover"
+                      sizes="96px"
                     />
                   </div>
 
