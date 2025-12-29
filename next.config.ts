@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
     remotePatterns: [
+      // Local development
       {
         protocol: "http",
         hostname: "localhost",
@@ -16,17 +17,25 @@ const nextConfig: NextConfig = {
         port: "8000",
         pathname: "/media/**",
       },
+      // Production backend
+      {
+        protocol: "https",
+        hostname: "d-agri-market-back.onrender.com",
+        pathname: "/media/**",
+      },
     ],
   },
   async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8000/api/:path*",
+        destination: `${apiUrl}/api/:path*`,
       },
       {
         source: "/media/:path*",
-        destination: "http://localhost:8000/media/:path*",
+        destination: `${apiUrl}/media/:path*`,
       },
     ];
   },
@@ -37,3 +46,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
