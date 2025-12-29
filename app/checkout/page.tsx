@@ -186,8 +186,9 @@ export default function CheckoutPage() {
   const cartItems = cart.items || []
   const subtotal = cartItems.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0)
   const shipping = shippingFee !== null ? shippingFee : 0
-  const tax = subtotal * 0.05 // 5% tax
+  const tax = subtotal * 0.1925 // 19.25% TVA (Cameroun)
   const total = subtotal + shipping + tax
+  const isFreeShipping = subtotal > 50000
 
   return (
     <div className="min-h-screen bg-background">
@@ -316,13 +317,12 @@ export default function CheckoutPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">Code postal *</label>
+                        <label className="block text-sm font-medium text-foreground mb-2">Code postal</label>
                         <input
                           type="text"
                           name="postalCode"
                           value={formData.postalCode}
                           onChange={handleInputChange}
-                          required
                           className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition"
                         />
                       </div>
@@ -338,10 +338,12 @@ export default function CheckoutPage() {
                         className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition"
                       >
                         <option value="">Sélectionner un pays</option>
-                        <option value="FR">France</option>
-                        <option value="BE">Belgique</option>
-                        <option value="CH">Suisse</option>
-                        <option value="LU">Luxembourg</option>
+                        <option value="CM">Cameroun</option>
+                        <option value="GA">Gabon</option>
+                        <option value="TD">Tchad</option>
+                        <option value="CG">Congo</option>
+                        <option value="CF">Rép. Centrafricaine</option>
+                        <option value="GQ">Guinée Équatoriale</option>
                       </select>
                     </div>
 
@@ -594,10 +596,14 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-foreground">
                   <span>Livraison</span>
-                  <span>{shipping.toFixed(0)} FCFA</span>
+                  {shippingFee !== null ? (
+                    <span>{shipping.toFixed(0)} FCFA</span>
+                  ) : (
+                    <span className="text-muted-foreground text-sm italic">À calculer</span>
+                  )}
                 </div>
                 <div className="flex justify-between text-foreground">
-                  <span>TVA (10%)</span>
+                  <span>TVA (19.25%)</span>
                   <span>{tax.toFixed(0)} FCFA</span>
                 </div>
               </div>
@@ -609,6 +615,12 @@ export default function CheckoutPage() {
 
               <div className="text-xs text-muted-foreground space-y-1">
                 <p className="text-green-600 font-medium">Livraison sécurisée garantie</p>
+                {isFreeShipping && (
+                  <p className="text-primary font-medium">Livraison gratuite disponible !</p>
+                )}
+                {!isFreeShipping && subtotal < 50000 && (
+                  <p>Plus que {(50000 - subtotal).toFixed(0)} FCFA pour la livraison gratuite</p>
+                )}
               </div>
             </div>
           </div>

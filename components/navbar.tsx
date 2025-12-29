@@ -4,8 +4,11 @@ import Link from "next/link"
 import { Leaf, ShoppingBag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import AuthStatus from "@/components/auth-status"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function Navbar() {
+    const { me } = useAuth()
+
     return (
         <header className="sticky top-0 z-50 bg-card border-b border-border">
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
@@ -25,9 +28,11 @@ export default function Navbar() {
                     <Link href="/sellers" className="text-sm text-foreground hover:text-primary transition">
                         Producteurs
                     </Link>
-                    <Link href="/about" className="text-sm text-foreground hover:text-primary transition">
-                        À propos
-                    </Link>
+                    {me && !me.is_seller && (
+                        <Link href="/auth/seller-signup" className="text-sm font-medium text-primary hover:text-primary/80 transition">
+                            Devenir Vendeur
+                        </Link>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-4">

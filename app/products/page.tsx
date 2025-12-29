@@ -73,13 +73,13 @@ export default function ProductsPage() {
         name: p.name,
         price: Number(p.price),
         old_price: p.old_price ? Number(p.old_price) : undefined,
-        rating: 0, // Default rating
+        rating: 0, // Default rating if API doesn't provide it
         reviews: 0,
         image: p.images && p.images.length > 0 ? resolveMediaUrl(p.images[0].image) : "/placeholder.svg",
         category: p.category_name || "Divers",
         seller: p.owner_name || "Vendeur",
-        distance: "0 km",
-        fresh: true,
+        distance: null, // Don't default to 0km unless calculated
+        fresh: false, // Don't default to true
         is_favorite: p.is_favorite || false,
       }))
     }
@@ -396,18 +396,20 @@ export default function ProductsPage() {
                         <p className="text-xs text-muted-foreground mt-1">{product.seller}</p>
                       </div>
 
-                      {/* Rating */}
-                      <div className="flex items-center gap-1 mb-3">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-3.5 h-3.5 ${i < Math.floor(product.rating) ? "fill-accent text-accent" : "text-muted"}`}
-                            />
-                          ))}
+                      {/* Rating - Only show if > 0 */}
+                      {product.rating > 0 && (
+                        <div className="flex items-center gap-1 mb-3">
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-3.5 h-3.5 ${i < Math.floor(product.rating) ? "fill-accent text-accent" : "text-muted"}`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-xs text-muted-foreground">({product.reviews})</span>
                         </div>
-                        <span className="text-xs text-muted-foreground">({product.reviews})</span>
-                      </div>
+                      )}
 
                       {/* Footer */}
                       <div className="flex items-center justify-between pt-3 border-t border-border">
@@ -420,10 +422,12 @@ export default function ProductsPage() {
                               </p>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <MapPin className="w-3 h-3" />
-                            {product.distance}km
-                          </p>
+                          {product.distance !== null && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                              <MapPin className="w-3 h-3" />
+                              {product.distance}km
+                            </p>
+                          )}
                         </div>
                         <Button size="sm" className="bg-primary hover:bg-primary/90">
                           <ShoppingBag className="w-4 h-4" />
@@ -443,7 +447,8 @@ export default function ProductsPage() {
                   onClick={() => {
                     setSearchQuery("")
                     setSelectedCategory("Tous")
-                    setPriceRange([0, 20])
+                    setPriceRange([0, 50000])
+                    setPromoOnly(false)
                   }}
                 >
                   Réinitialiser les filtres
