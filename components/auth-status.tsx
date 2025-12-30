@@ -49,10 +49,15 @@ export default function AuthStatus() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback>{me.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+        <Button variant="ghost" className="relative flex items-center gap-2 px-2 hover:bg-primary/5 rounded-full">
+          <Avatar className="h-8 w-8 border border-border">
+            <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+              {me.username.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
           </Avatar>
+          <span className="hidden sm:inline-block text-sm font-medium text-foreground">
+            {me.username}
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>

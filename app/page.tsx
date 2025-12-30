@@ -19,6 +19,7 @@ import Navbar from "@/components/navbar"
 import { ProductCard } from "@/components/product-card"
 import { getProducts, getCategories } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
+import { useAuth } from "@/hooks/use-auth"
 import dynamic from "next/dynamic"
 
 const Map = dynamic(() => import("@/components/map"), { ssr: false })
@@ -32,6 +33,7 @@ const CATEGORIES: { name: string; icon: any; color: string }[] = [
 ]
 
 export default function Home() {
+    const { me } = useAuth()
     const [featuredProducts, setFeaturedProducts] = useState<any[]>([])
     const [mapProducts, setMapProducts] = useState<any[]>([])
     const [categories, setCategories] = useState<any[]>([])
@@ -211,22 +213,32 @@ export default function Home() {
                 </section>
 
                 {/* Footer CTA */}
-                <section className="py-24 relative overflow-hidden rounded-[3rem] mx-4 mb-12">
-                    <div className="absolute inset-0 bg-primary/95 -z-10" />
-                    <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10 -z-10" />
+                {(!me || !me.is_seller) && (
+                    <section className="py-20 px-4 mb-20">
+                        <div className="max-w-6xl mx-auto relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary to-emerald-700 shadow-2xl shadow-primary/20">
+                            {/* Decorative bubbles */}
+                            <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-96 h-96 bg-white/10 rounded-full blur-3xl text-white" />
+                            <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-64 h-64 bg-emerald-400/20 rounded-full blur-2xl" />
 
-                    <div className="max-w-4xl mx-auto px-4 text-center">
-                        <h2 className="text-4xl font-bold text-white mb-6">Vous êtes producteur ?</h2>
-                        <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
-                            Rejoignez plus de 500 agriculteurs qui développent leur activité avec D-Agri Market. Pas de frais cachés, juste de la croissance.
-                        </p>
-                        <Link href="/auth/seller-signup">
-                            <Button size="lg" className="h-14 px-8 bg-white text-primary hover:bg-gray-100 font-bold text-lg rounded-full shadow-2xl transition hover:-translate-y-1">
-                                Créer ma boutique gratuitement
-                            </Button>
-                        </Link>
-                    </div>
-                </section>
+                            <div className="relative px-6 py-16 md:py-24 text-center max-w-3xl mx-auto">
+                                <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
+                                    Vous êtes producteur ?
+                                </h2>
+                                <p className="text-lg md:text-xl text-white/90 mb-10 leading-relaxed font-medium">
+                                    Rejoignez plus de 500 agriculteurs qui développent leur activité avec D-Agri Market.
+                                    <span className="block mt-2 text-white/80 text-base md:text-lg">Pas de frais cachés, juste de la croissance.</span>
+                                </p>
+                                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                    <Link href="/auth/seller-signup">
+                                        <Button size="lg" className="h-14 px-10 bg-white text-primary hover:bg-white/90 font-bold text-lg rounded-full shadow-lg transition-all hover:scale-105 active:scale-95">
+                                            Créer ma boutique gratuitement
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
 
             </main>
         </div>

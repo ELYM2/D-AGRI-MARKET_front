@@ -262,12 +262,33 @@ export async function getOrder(id: number) {
   return res.json()
 }
 
+export async function getSellerOrders() {
+  const res = await apiCall("/api/seller-orders/", {
+    cache: "no-store",
+  })
+
+  if (!res.ok) throw new Error("Failed to fetch seller orders")
+  return res.json()
+}
+
+export async function getSellerOrder(id: number) {
+  const res = await apiCall(`/api/seller-orders/${id}/`, {
+    cache: "no-store",
+  })
+
+  if (!res.ok) {
+    const message = res.status === 404 ? "Commande introuvable" : "Failed to fetch order"
+    throw new Error(message)
+  }
+  return res.json()
+}
+
 export async function updateOrderStatus(
   id: number,
   status: "pending" | "processing" | "delivered" | "cancelled",
   reason?: string
 ) {
-  const res = await apiCall(`/api/orders/${id}/update_status/`, {
+  const res = await apiCall(`/api/seller-orders/${id}/update_status/`, {
     method: "POST",
     body: JSON.stringify({ status, ...(reason ? { reason } : {}) }),
   })
@@ -284,6 +305,7 @@ export async function updateOrderStatus(
   }
   return res.json()
 }
+
 
 export async function createOrder(data: {
   shipping_address: string;
@@ -398,9 +420,54 @@ export async function getSeller(id: number) {
   return res.json();
 }
 
+// Reviews API
+export async function createReview(data: { product: number; rating: number; comment: string }) {
+  const res = await apiCall("/api/reviews/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+
+  if (!res.ok) {
+    let message = "Impossible d'ajouter l'avis"
+    try {
+      const error = await res.json()
+      message = error.detail || error.error || message
+    } catch {
+      // keep default
+    }
+    throw new Error(message)
+  }
+  return res.json()
+}
+
+export async function getReviews(productId: number) {
+  const res = await apiCall(`/api/reviews/?product=${productId}`, {
+    cache: "no-store",
+  })
+  if (!res.ok) throw new Error("Failed to fetch reviews")
+  return res.json()
+}
+
+export async function getSellerReviews() {
+  const res = await apiCall("/api/reviews/?mode=seller", {
+    cache: "no-store",
+  })
+  if (!res.ok) throw new Error("Failed to fetch seller reviews")
+  return res.json()
+}
+
+export async function replyToReview(reviewId: number, response: string) {
+  const res = await apiCall(`/api/reviews/${reviewId}/respond/`, {
+    method: "POST",
+    body: JSON.stringify({ response }),
+  })
+  if (!res.ok) throw new Error("Failed to reply to review")
+  return res.json()
+}
+
 // Messages API
 export async function getMessages(box: "inbox" | "sent" | "received" = "inbox") {
-  const res = await apiCall(`/api/messages/?box=${box}`, {
+  const res = await apiCall(`/api/messages/?inbox=${box}`, {
     cache: "no-store",
   });
 

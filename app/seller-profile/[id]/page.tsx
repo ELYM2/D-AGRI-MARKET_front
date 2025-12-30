@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { getSeller, getProducts } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 import { resolveMediaUrl } from "@/lib/media"
+import Navbar from "@/components/navbar"
 
 export default function SellerProfilePage() {
   const params = useParams()
@@ -70,22 +71,7 @@ export default function SellerProfilePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-card border-b border-border">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Leaf className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">D-AGRI MARKET</span>
-          </Link>
-
-          <Link href="/sellers">
-            <Button variant="outline" size="sm">
-              Tous les producteurs
-            </Button>
-          </Link>
-        </nav>
-      </header>
+      <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
         <div className="relative -mx-4 sm:mx-0 h-64 bg-muted flex items-center justify-center">
@@ -176,6 +162,52 @@ export default function SellerProfilePage() {
                   </div>
                 )}
               </div>
+
+              <div className="border-t border-border pt-6 space-y-4">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary" />
+                  Horaires
+                </h3>
+                <div className="text-sm space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Lundi</span>
+                    <span className="text-foreground">{seller.mon_open ? `${seller.mon_open.substring(0, 5)} - ${seller.mon_close.substring(0, 5)}` : "Fermé"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Samedi</span>
+                    <span className="text-foreground">{seller.sat_open ? `${seller.sat_open.substring(0, 5)} - ${seller.sat_close.substring(0, 5)}` : "Fermé"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Dimanche</span>
+                    <span className="text-foreground">{seller.sun_open ? `${seller.sun_open.substring(0, 5)} - ${seller.sun_close.substring(0, 5)}` : "Fermé"}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-6 space-y-4">
+                <h3 className="text-sm font-bold text-foreground">Livraison</h3>
+                <div className="space-y-3">
+                  {seller.min_order_amount > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Commande min.</p>
+                      <p className="text-sm font-medium text-foreground">{Number(seller.min_order_amount).toLocaleString()} FCFA</p>
+                    </div>
+                  )}
+                  {seller.delivery_time && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Temps estimé</p>
+                      <p className="text-sm font-medium text-foreground">{seller.delivery_time}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {seller.terms_of_sale && (
+                <div className="border-t border-border pt-6 space-y-2">
+                  <h3 className="text-sm font-bold text-foreground">Conditions</h3>
+                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">{seller.terms_of_sale}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

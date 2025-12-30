@@ -18,6 +18,11 @@ export interface RegisterData {
   business_address?: string
   business_city?: string
   business_postal_code?: string
+  business_country?: string
+  phone?: string
+  address?: string
+  city?: string
+  postal_code?: string
 }
 
 export async function register(payload: RegisterData) {
@@ -140,9 +145,29 @@ export async function logout() {
 }
 
 export type UpdateProfilePayload = {
+  is_seller?: boolean;
   first_name?: string;
   last_name?: string;
   email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  postal_code?: string;
+  business_name?: string;
+  business_description?: string;
+  business_address?: string;
+  business_city?: string;
+  business_postal_code?: string;
+  business_country?: string;
+  min_order_amount?: number;
+  delivery_time?: string;
+  terms_of_sale?: string;
+  mon_open?: string | null;
+  mon_close?: string | null;
+  sat_open?: string | null;
+  sat_close?: string | null;
+  sun_open?: string | null;
+  sun_close?: string | null;
 };
 
 export async function updateProfile(payload: UpdateProfilePayload) {

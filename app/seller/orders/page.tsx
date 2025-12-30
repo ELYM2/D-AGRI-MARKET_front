@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { Menu, X, Eye, Package, Calendar, AlertCircle } from "lucide-react"
+import { Menu, X, Eye, Package, Calendar, AlertCircle, Inbox, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getOrders } from "@/lib/api"
+import { getSellerOrders } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 
 type OrderItem = {
@@ -20,7 +20,7 @@ type Order = {
   user_name: string
   status: "pending" | "processing" | "delivered" | "cancelled"
   status_display: string
-  total_amount: number
+  subtotal: number
   shipping_city: string
   created_at: string
   items: OrderItem[]
@@ -36,7 +36,7 @@ export default function SellerOrdersPage() {
     const loadOrders = async () => {
       try {
         setLoading(true)
-        const data = await getOrders()
+        const data = await getSellerOrders()
         setOrders(Array.isArray(data) ? data : data?.results || [])
       } catch (error: any) {
         console.error("Erreur de chargement des commandes :", error)
@@ -114,6 +114,20 @@ export default function SellerOrdersPage() {
             Commandes
           </Link>
           <Link
+            href="/seller/messages"
+            className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg"
+          >
+            <Inbox className="w-5 h-5" />
+            Messages
+          </Link>
+          <Link
+            href="/seller/reviews"
+            className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg"
+          >
+            <MessageCircle className="w-5 h-5" />
+            Avis
+          </Link>
+          <Link
             href="/seller/analytics"
             className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg"
           >
@@ -186,7 +200,7 @@ export default function SellerOrdersPage() {
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <p className="text-lg font-bold text-primary">
-                            {Number(order.total_amount || 0).toFixed(0)} FCFA
+                            {Number(order.subtotal || 0).toFixed(0)} FCFA
                           </p>
                           <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
                             <Calendar className="w-3 h-3" />

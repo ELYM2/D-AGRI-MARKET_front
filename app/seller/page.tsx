@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { BarChart3, Package, ShoppingCart, Users, TrendingUp, Plus, Eye, Edit, Trash2, Leaf, PauseCircle, PlayCircle } from "lucide-react"
+import { BarChart3, Package, ShoppingCart, Users, TrendingUp, Plus, Eye, Edit, Trash2, Leaf, PauseCircle, PlayCircle, Inbox, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getSellerStats, getProducts, updateProduct, deleteProduct } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
@@ -326,6 +326,18 @@ export default function SellerDashboard() {
             <BarChart3 className="w-8 h-8 text-primary mb-4" />
             <h3 className="font-semibold text-foreground mb-2">Statistiques</h3>
             <p className="text-sm text-muted-foreground">Analysez vos performances</p>
+          </Link>
+
+          <Link href="/seller/messages" className="bg-card rounded-lg border border-border p-6 hover:border-primary transition">
+            <Inbox className="w-8 h-8 text-primary mb-4" />
+            <h3 className="font-semibold text-foreground mb-2">Messagerie</h3>
+            <p className="text-sm text-muted-foreground">Répondez aux clients</p>
+          </Link>
+
+          <Link href="/seller/reviews" className="bg-card rounded-lg border border-border p-6 hover:border-primary transition">
+            <MessageCircle className="w-8 h-8 text-primary mb-4" />
+            <h3 className="font-semibold text-foreground mb-2">Avis Clients</h3>
+            <p className="text-sm text-muted-foreground">Gérez votre réputation</p>
           </Link>
         </div>
       </main>

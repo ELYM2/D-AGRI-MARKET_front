@@ -9,9 +9,12 @@ import { Leaf, Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { register } from "@/lib/auth"
 import { showToast } from "@/components/toast-notification"
+import { useAuth } from "@/hooks/use-auth"
+import { useEffect } from "react"
 
 export default function SellerSignupPage() {
   const router = useRouter()
+  const { me, updateProfile } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -35,6 +38,24 @@ export default function SellerSignupPage() {
     agreeTerms: false,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Pre-fill if already logged in
+  useEffect(() => {
+    if (me) {
+      setFormData(prev => ({
+        ...prev,
+        firstName: me.first_name || "",
+        lastName: me.last_name || "",
+        email: me.email || "",
+        phone: me.profile?.phone || "",
+        address: me.profile?.address || "",
+        city: me.profile?.city || "",
+        postalCode: me.profile?.postal_code || "",
+        country: me.profile?.business_country || "",
+        agreeTerms: true // They probably already agreed, but let's keep it safe
+      }))
+    }
+  }, [me])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
@@ -82,21 +103,48 @@ export default function SellerSignupPage() {
     if (validateStep()) {
       setLoading(true)
       try {
-        await register({
-          username: formData.email, // Use email as username
-          email: formData.email,
-          password: formData.password,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          is_seller: true,
-          business_name: formData.businessName,
-          business_description: formData.description,
-          business_address: formData.address,
-          business_city: formData.city,
-          business_postal_code: formData.postalCode,
-        })
-        showToast("success", "Compte créé", "Votre compte vendeur a été créé avec succès")
-        router.push("/seller") // Redirect to seller dashboard
+        if (me) {
+          // Already a user, just update to seller
+          await updateProfile({
+            is_seller: true,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            address: formData.address,
+            city: formData.city,
+            postal_code: formData.postalCode,
+            business_name: formData.businessName,
+            business_description: formData.description,
+            business_address: formData.address,
+            business_city: formData.city,
+            business_postal_code: formData.postalCode,
+            business_country: formData.country,
+          })
+          showToast("success", "Profil mis à jour", "Vous êtes maintenant enregistré comme vendeur")
+        } else {
+          // New account
+          await register({
+            username: formData.email,
+            email: formData.email,
+            password: formData.password,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            is_seller: true,
+            business_name: formData.businessName,
+            business_description: formData.description,
+            business_address: formData.address,
+            business_city: formData.city,
+            business_postal_code: formData.postalCode,
+            business_country: formData.country,
+            phone: formData.phone,
+            address: formData.address,
+            city: formData.city,
+            postal_code: formData.postalCode,
+          })
+          showToast("success", "Compte créé", "Votre compte vendeur a été créé avec succès")
+        }
+        router.push("/seller")
       } catch (error: any) {
         console.error("Registration error:", error)
         showToast("error", "Erreur", error.message || "Impossible de créer le compte")
@@ -303,10 +351,39 @@ export default function SellerSignupPage() {
                     className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition"
                   >
                     <option value="">Sélectionner</option>
-                    <option value="FR">France</option>
-                    <option value="BE">Belgique</option>
-                    <option value="CH">Suisse</option>
-                    <option value="LU">Luxembourg</option>
+                    <optgroup label="Afrique de l'Ouest (FCFA - UEMOA)">
+                      <option value="BJ">Bénin</option>
+                      <option value="BF">Burkina Faso</option>
+                      <option value="CI">Côte d'Ivoire</option>
+                      <option value="GW">Guinée-Bissau</option>
+                      <option value="ML">Mali</option>
+                      <option value="NE">Niger</option>
+                      <option value="SN">Sénégal</option>
+                      <option value="TG">Togo</option>
+                    </optgroup>
+                    <optgroup label="Afrique Centrale (FCFA - CEMAC)">
+                      <option value="CM">Cameroun</option>
+                      <option value="CF">Centrafrique</option>
+                      <option value="TD">Tchad</option>
+                      <option value="CG">Congo-Brazzaville</option>
+                      <option value="GQ">Guinée Équatoriale</option>
+                      <option value="GA">Gabon</option>
+                    </optgroup>
+                    <optgroup label="Autres pays d'Afrique">
+                      <option value="CD">Congo-Kinshasa (RDC)</option>
+                      <option value="GN">Guinée</option>
+                      <option value="MA">Maroc</option>
+                      <option value="DZ">Algérie</option>
+                      <option value="TN">Tunisie</option>
+                      <option value="NG">Nigeria</option>
+                      <option value="GH">Ghana</option>
+                    </optgroup>
+                    <optgroup label="Europe">
+                      <option value="FR">France</option>
+                      <option value="BE">Belgique</option>
+                      <option value="CH">Suisse</option>
+                      <option value="LU">Luxembourg</option>
+                    </optgroup>
                   </select>
                   {errors.country && <p className="text-xs text-destructive mt-1">{errors.country}</p>}
                 </div>
@@ -316,29 +393,33 @@ export default function SellerSignupPage() {
             {/* Step 4: Account & Agreement */}
             {step === 4 && (
               <div className="space-y-6">
-                <h2 className="text-lg font-semibold text-foreground">Créer votre compte</h2>
+                <h2 className="text-lg font-semibold text-foreground">
+                  {me ? "Finaliser votre inscription" : "Créer votre compte"}
+                </h2>
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Mot de passe *</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      placeholder="••••••••"
-                      className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                {!me && (
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Mot de passe *</label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        placeholder="••••••••"
+                        className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
                   </div>
-                  {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
-                </div>
+                )}
 
                 <div className="flex items-start gap-2">
                   <input
@@ -381,19 +462,21 @@ export default function SellerSignupPage() {
                 </Button>
               ) : (
                 <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90" disabled={loading}>
-                  {loading ? "Création..." : "Créer mon commerce"}
+                  {loading ? "Traitement..." : me ? "Devenir vendeur" : "Créer mon commerce"}
                 </Button>
               )}
             </div>
           </form>
 
           {/* Login Link */}
-          <div className="text-center text-sm border-t border-border pt-6">
-            <span className="text-muted-foreground">Déjà vendeur ? </span>
-            <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium transition">
-              Se connecter
-            </Link>
-          </div>
+          {!me && (
+            <div className="text-center text-sm border-t border-border pt-6">
+              <span className="text-muted-foreground">Déjà vendeur ? </span>
+              <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium transition">
+                Se connecter
+              </Link>
+            </div>
+          )}
         </div>
       </div >
     </div >

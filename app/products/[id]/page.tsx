@@ -4,12 +4,12 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useParams, useRouter } from "next/navigation"
-import { Star, MapPin, ShoppingBag, Leaf, Heart, Share2, ArrowLeft, Truck, Shield, Clock, Minus, Plus } from "lucide-react"
+import { getProduct, addToCart, toggleFavorite, getReviews, createReview, sendMessage } from "@/lib/api"
 import { Button } from "@/components/ui/button"
-import { getProduct, addToCart, toggleFavorite } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 import { resolveMediaUrl } from "@/lib/media"
 import { useAuth } from "@/hooks/use-auth"
+import { MessageCircle, Send, X, Star, MapPin, ShoppingBag, Leaf, Heart, Share2, ArrowLeft, Truck, Shield, Clock, Minus, Plus } from "lucide-react"
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -20,6 +20,17 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Reviews State
+  const [reviews, setReviews] = useState<any[]>([])
+  const [loadingReviews, setLoadingReviews] = useState(false)
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" })
+  const [submittingReview, setSubmittingReview] = useState(false)
+
+  // Message State
+  const [messageOpen, setMessageOpen] = useState(false)
+  const [messageBody, setMessageBody] = useState("")
+  const [sendingMessage, setSendingMessage] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -44,6 +55,7 @@ export default function ProductDetailPage() {
                 : ["/placeholder.svg"],
             category: data.category_name || "Divers",
             seller: data.owner_name || "Vendeur",
+            owner_id: data.owner,
             distance: data.distance_km || null, // Don't default to 0km logic
             fresh: data.is_fresh || false, // Don't default to true
             stock: data.stock,
@@ -69,6 +81,70 @@ export default function ProductDetailPage() {
       cancelled = true
     }
   }, [params.id])
+
+  useEffect(() => {
+    if (params.id) {
+      loadReviews()
+    }
+  }, [params.id])
+
+  const loadReviews = async () => {
+    try {
+      setLoadingReviews(true)
+      const data = await getReviews(Number(params.id))
+      // Filter to show only reviews for this product if api returns all (safety)
+      setReviews(data.results || data)
+    } catch (err) {
+      console.error("Failed to load reviews", err)
+    } finally {
+      setLoadingReviews(false)
+    }
+  }
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!me) {
+      showToast("error", "Connexion requise", "Veuillez vous connecter pour laisser un avis")
+      return
+    }
+    try {
+      setSubmittingReview(true)
+      await createReview({
+        product: product.id,
+        rating: reviewForm.rating,
+        comment: reviewForm.comment
+      })
+      showToast("success", "Avis publié", "Merci pour votre retour !")
+      setReviewForm({ rating: 5, comment: "" })
+      loadReviews() // Reload
+    } catch (error: any) {
+      showToast("error", "Erreur", error.message || "Impossible de publier l'avis")
+    } finally {
+      setSubmittingReview(false)
+    }
+  }
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!me) return
+    if (!messageBody.trim()) return
+
+    try {
+      setSendingMessage(true)
+      await sendMessage({
+        receiver: product.owner_id,
+        subject: `Question sur ${product.name}`,
+        body: messageBody
+      })
+      showToast("success", "Message envoyé", "Le vendeur vous répondra bientôt.")
+      setMessageOpen(false)
+      setMessageBody("")
+    } catch (error: any) {
+      showToast("error", "Erreur", error.message || "Echec de l'envoi")
+    } finally {
+      setSendingMessage(false)
+    }
+  }
 
   const handleAddToCart = async () => {
     if (product) {
@@ -214,6 +290,23 @@ export default function ProductDetailPage() {
                     <span className="font-medium text-foreground">{product.category}</span>
                     <span>•</span>
                     <span className="text-primary">{product.seller}</span>
+                    {product.owner_id && me?.id !== product.owner_id && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="ml-2 h-7 text-xs"
+                        onClick={() => {
+                          if (!me) {
+                            showToast("error", "Connexion requise", "Connectez-vous pour contacter le vendeur")
+                            return
+                          }
+                          setMessageOpen(true)
+                        }}
+                      >
+                        <MessageCircle className="w-3 h-3 mr-1" />
+                        Contacter
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <button
@@ -332,16 +425,118 @@ export default function ProductDetailPage() {
         {/* Reviews Section - Placeholder for now */}
         <div className="mt-16 border-t border-border pt-12">
           <h2 className="text-2xl font-bold text-foreground mb-8">Avis clients</h2>
-          {product.review_count > 0 ? (
-            <div className="bg-muted p-8 rounded-xl text-center">
-              <p>Les avis seront affichés ici.</p>
+
+          <div className="grid md:grid-cols-3 gap-12">
+            {/* Review List */}
+            <div className="md:col-span-2 space-y-6">
+              {reviews.length > 0 ? (
+                reviews.map((review: any) => (
+                  <div key={review.id} className="bg-card border border-border p-6 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-foreground">{review.user_name || "Utilisateur"}</span>
+                        <span className="text-sm text-muted-foreground">• {new Date(review.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className={`w-4 h-4 ${i < review.rating ? "fill-accent text-accent" : "text-muted"}`} />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-foreground">{review.comment}</p>
+                    {review.response && (
+                      <div className="mt-4 bg-muted/50 p-4 rounded-md border-l-4 border-primary">
+                        <p className="text-xs font-bold text-primary mb-1">Réponse du vendeur</p>
+                        <p className="text-sm text-muted-foreground">{review.response}</p>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-muted-foreground">Aucun avis pour le moment.</div>
+              )}
             </div>
-          ) : (
-            <div className="bg-muted/50 p-8 rounded-xl text-center">
-              <p className="text-muted-foreground">Aucun avis pour le moment. Soyez le premier à donner votre avis !</p>
+
+            {/* Review Form */}
+            <div className="bg-muted/30 p-6 rounded-xl border border-border h-fit">
+              <h3 className="font-bold text-lg mb-4 text-foreground">Laisser un avis</h3>
+              {!me ? (
+                <div className="text-center py-6">
+                  <p className="text-muted-foreground mb-4">Vous devez être connecté pour laisser un avis.</p>
+                  <Link href="/auth/login">
+                    <Button variant="outline">Se connecter</Button>
+                  </Link>
+                </div>
+              ) : (
+                <form onSubmit={handleReviewSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1 text-foreground">Note</label>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
+                          className="focus:outline-none transition-transform hover:scale-110"
+                        >
+                          <Star className={`w-6 h-6 ${star <= reviewForm.rating ? "fill-accent text-accent" : "text-muted"}`} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1 text-foreground">Commentaire</label>
+                    <textarea
+                      className="w-full px-3 py-2 bg-background border border-border rounded-md outline-none focus:border-primary text-foreground"
+                      rows={4}
+                      placeholder="Partagez votre expérience..."
+                      value={reviewForm.comment}
+                      onChange={e => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={submittingReview}>
+                    {submittingReview ? "Publication..." : "Publier mon avis"}
+                  </Button>
+                </form>
+              )}
             </div>
-          )}
+          </div>
         </div>
+
+        {/* Message Modal */}
+        {messageOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-card w-full max-w-md rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <h3 className="font-bold text-foreground">Contacter {product.seller}</h3>
+                <Button variant="ghost" size="icon" onClick={() => setMessageOpen(false)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+              <form onSubmit={handleSendMessage} className="p-4 space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground">Votre message</label>
+                  <textarea
+                    className="w-full mt-1 px-3 py-2 bg-input border border-border rounded-md outline-none focus:border-primary text-foreground"
+                    rows={5}
+                    placeholder="Bonjour, ce produit est-il disponible en..."
+                    value={messageBody}
+                    onChange={e => setMessageBody(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setMessageOpen(false)}>Annuler</Button>
+                  <Button type="submit" disabled={sendingMessage || !messageBody.trim()}>
+                    <Send className="w-4 h-4 mr-2" />
+                    {sendingMessage ? "Envoi..." : "Envoyer"}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

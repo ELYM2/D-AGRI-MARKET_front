@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, User, MapPin, Phone, Mail, Download, Printer, PackageCheck, Ban, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getOrder, updateOrderStatus } from "@/lib/api"
+import { getSellerOrder, updateOrderStatus } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 
 type OrderItem = {
@@ -21,10 +21,8 @@ type OrderDetail = {
   user_name: string
   status: "pending" | "processing" | "delivered" | "cancelled"
   status_display: string
-  total_amount: number
-  shipping_address: string
+  subtotal: number
   shipping_city: string
-  shipping_postal_code: string
   created_at: string
   items: OrderItem[]
 }
@@ -46,7 +44,7 @@ export default function OrderDetailPage() {
     const loadOrder = async () => {
       try {
         setLoading(true)
-        const data = await getOrder(orderId)
+        const data = await getSellerOrder(orderId)
         setOrder(data)
         setStatus(data.status)
       } catch (error: any) {
@@ -164,15 +162,13 @@ export default function OrderDetailPage() {
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
                 <p className="text-foreground">
-                  {order.shipping_address}
-                  <br />
-                  {order.shipping_city} {order.shipping_postal_code}
+                  {order.shipping_city} (Adresse complète masquée pour confidentialité du sous-vendeur si nécessaire)
                 </p>
               </div>
             </div>
           </div>
 
-            <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3">
             {["processing", "delivered", "cancelled"].includes(status) && (
               <div className="w-full md:w-1/2">
                 <label className="text-sm text-muted-foreground mb-1 block">Motif (optionnel, visible par l'acheteur)</label>
@@ -250,8 +246,8 @@ export default function OrderDetailPage() {
               <span className="text-foreground">{subtotal.toFixed(0)} FCFA</span>
             </div>
             <div className="border-t border-border pt-3 flex justify-between">
-              <span className="font-bold text-foreground">Total</span>
-              <span className="text-lg font-bold text-primary">{Number(order.total_amount || subtotal).toFixed(0)} FCFA</span>
+              <span className="font-bold text-foreground">Total (Votre part)</span>
+              <span className="text-lg font-bold text-primary">{Number(order.subtotal || subtotal).toFixed(0)} FCFA</span>
             </div>
           </div>
         </div>

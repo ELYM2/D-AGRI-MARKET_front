@@ -1,6 +1,6 @@
 "use client"
 import Link from "next/link"
-import { BarChart3, TrendingUp, DollarSign, Users, Package, ArrowUp, ArrowDown, Menu, X } from "lucide-react"
+import { BarChart3, TrendingUp, DollarSign, Users, Package, ArrowUp, ArrowDown, Menu, X, Inbox, MessageCircle } from "lucide-react"
 import { useState } from "react"
 
 export default function AnalyticsPage() {
@@ -49,6 +49,20 @@ export default function AnalyticsPage() {
             className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg"
           >
             Commandes
+          </Link>
+          <Link
+            href="/seller/messages"
+            className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg"
+          >
+            <Inbox className="w-5 h-5" />
+            Messages
+          </Link>
+          <Link
+            href="/seller/reviews"
+            className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg"
+          >
+            <MessageCircle className="w-5 h-5" />
+            Avis
           </Link>
           <Link
             href="/seller/settings"

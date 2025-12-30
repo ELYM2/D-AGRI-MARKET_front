@@ -28,6 +28,14 @@ export default function Navbar() {
                     <Link href="/sellers" className="text-sm text-foreground hover:text-primary transition">
                         Producteurs
                     </Link>
+                    <Link href="/about" className="text-sm text-foreground hover:text-primary transition">
+                        À propos
+                    </Link>
+                    {me && (
+                        <Link href="/favorites" className="text-sm text-foreground hover:text-primary transition">
+                            Favoris
+                        </Link>
+                    )}
                     {me && !me.is_seller && (
                         <Link href="/auth/seller-signup" className="text-sm font-medium text-primary hover:text-primary/80 transition">
                             Devenir Vendeur

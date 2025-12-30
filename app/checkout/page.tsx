@@ -9,6 +9,7 @@ import { getCart, createOrder, initiateMobilePayment, getDeliveryFee } from "@/l
 import { MapPin, Navigation, Loader2, ArrowLeft, CheckCircle2, Leaf } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { showToast } from "@/components/toast-notification"
+import { useAuth } from "@/hooks/use-auth"
 
 interface CartProduct {
   id: number
@@ -78,6 +79,22 @@ export default function CheckoutPage() {
   const [shippingFee, setShippingFee] = useState<number | null>(null)
   const [distance, setDistance] = useState<number | null>(null)
   const [locationLoading, setLocationLoading] = useState(false)
+  const { me } = useAuth()
+
+  useEffect(() => {
+    if (me) {
+      setFormData(prev => ({
+        ...prev,
+        firstName: prev.firstName || me.first_name || "",
+        lastName: prev.lastName || me.last_name || "",
+        email: prev.email || me.email || "",
+        phone: prev.phone || me.profile?.phone || "",
+        address: prev.address || me.profile?.address || "",
+        city: prev.city || me.profile?.city || "",
+        postalCode: prev.postalCode || me.profile?.postal_code || "",
+      }))
+    }
+  }, [me])
 
   const loadCart = useCallback(async () => {
     try {

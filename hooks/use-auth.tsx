@@ -24,6 +24,22 @@ type Profile = {
   address?: string | null
   city?: string | null
   postal_code?: string | null
+  is_seller?: boolean
+  business_name?: string | null
+  business_description?: string | null
+  business_address?: string | null
+  business_city?: string | null
+  business_postal_code?: string | null
+  business_country?: string | null
+  min_order_amount?: number | null
+  delivery_time?: string | null
+  terms_of_sale?: string | null
+  mon_open?: string | null
+  mon_close?: string | null
+  sat_open?: string | null
+  sat_close?: string | null
+  sun_open?: string | null
+  sun_close?: string | null
 }
 
 type Me = {

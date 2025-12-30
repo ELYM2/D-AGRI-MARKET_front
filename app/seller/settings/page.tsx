@@ -1,31 +1,82 @@
 "use client"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Menu, X, MapPin, Clock, FileText, Save } from "lucide-react"
+import { Menu, X, MapPin, Clock, FileText, Save, Inbox, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
 import { showToast } from "@/components/toast-notification"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function SettingsPage() {
+  const { me, updateProfile } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+
   const [settings, setSettings] = useState({
-    shopName: "Ferme du soleil",
-    description: "Ferme bio certifiée depuis 2010",
-    address: "123 Chemin de la Ferme, Paris",
-    phone: "+33 6 12 34 56 78",
-    email: "contact@fermedusoleil.fr",
-    monOpen: "08:00",
-    monClose: "19:00",
-    satOpen: "08:00",
-    satClose: "19:00",
-    sunOpen: "09:00",
-    sunClose: "13:00",
-    minOrder: "15",
-    deliveryTime: "24-48",
+    shopName: "",
+    description: "",
+    address: "",
+    phone: "",
+    email: "",
+    monOpen: "",
+    monClose: "",
+    satOpen: "",
+    satClose: "",
+    sunOpen: "",
+    sunClose: "",
+    minOrder: "",
+    deliveryTime: "",
     terms: "",
+    country: "",
   })
 
-  const handleSave = () => {
-    showToast("success", "Paramètres sauvegardés", "Vos paramètres ont été mis à jour")
+  useEffect(() => {
+    if (me) {
+      setSettings({
+        shopName: me.profile?.business_name || "",
+        description: me.profile?.business_description || "",
+        address: me.profile?.business_address || "",
+        phone: me.profile?.phone || "",
+        email: me.email || "",
+        monOpen: me.profile?.mon_open ? me.profile.mon_open.substring(0, 5) : "",
+        monClose: me.profile?.mon_close ? me.profile.mon_close.substring(0, 5) : "",
+        satOpen: me.profile?.sat_open ? me.profile.sat_open.substring(0, 5) : "",
+        satClose: me.profile?.sat_close ? me.profile.sat_close.substring(0, 5) : "",
+        sunOpen: me.profile?.sun_open ? me.profile.sun_open.substring(0, 5) : "",
+        sunClose: me.profile?.sun_close ? me.profile.sun_close.substring(0, 5) : "",
+        minOrder: me.profile?.min_order_amount?.toString() || "0",
+        deliveryTime: me.profile?.delivery_time || "",
+        terms: me.profile?.terms_of_sale || "",
+        country: me.profile?.business_country || "",
+      })
+    }
+  }, [me])
+
+  const handleSave = async () => {
+    try {
+      setSaving(true)
+      await updateProfile({
+        email: settings.email,
+        phone: settings.phone,
+        business_name: settings.shopName,
+        business_description: settings.description,
+        business_address: settings.address,
+        min_order_amount: parseFloat(settings.minOrder) || 0,
+        delivery_time: settings.deliveryTime,
+        terms_of_sale: settings.terms,
+        mon_open: settings.monOpen || null,
+        mon_close: settings.monClose || null,
+        sat_open: settings.satOpen || null,
+        sat_close: settings.satClose || null,
+        sun_open: settings.sunOpen || null,
+        sun_close: settings.sunClose || null,
+        business_country: settings.country,
+      })
+      showToast("success", "Paramètres sauvegardés", "Vos paramètres ont été mis à jour")
+    } catch (error: any) {
+      showToast("error", "Erreur", error.message || "Impossible de sauvegarder les paramètres")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -56,6 +107,20 @@ export default function SettingsPage() {
             Commandes
           </Link>
           <Link
+            href="/seller/messages"
+            className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg"
+          >
+            <Inbox className="w-5 h-5" />
+            Messages
+          </Link>
+          <Link
+            href="/seller/reviews"
+            className="flex items-center gap-3 px-4 py-2 text-foreground hover:bg-muted rounded-lg"
+          >
+            <MessageCircle className="w-5 h-5" />
+            Avis
+          </Link>
+          <Link
             href="/seller/settings"
             className="flex items-center gap-3 px-4 py-2 bg-primary/10 text-primary rounded-lg font-medium"
           >
@@ -73,9 +138,9 @@ export default function SettingsPage() {
             <h1 className="text-2xl font-bold text-foreground">Paramètres du magasin</h1>
           </div>
 
-          <Button className="bg-primary hover:bg-primary/90" onClick={handleSave}>
+          <Button className="bg-primary hover:bg-primary/90" onClick={handleSave} disabled={saving}>
             <Save className="w-4 h-4 mr-2" />
-            Enregistrer
+            {saving ? "Chargement..." : "Enregistrer"}
           </Button>
         </header>
 
@@ -133,6 +198,61 @@ export default function SettingsPage() {
                   onChange={(e) => setSettings({ ...settings, address: e.target.value })}
                   className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition"
                 />
+              </div>
+              <div className="md:col-span-2 grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Ville</label>
+                  <input
+                    type="text"
+                    value={me?.profile?.business_city || ""}
+                    disabled
+                    className="w-full px-4 py-2 bg-muted border border-border rounded-lg outline-none text-muted-foreground cursor-not-allowed"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">Ville non modifiable ici</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Pays</label>
+                  <select
+                    value={settings.country}
+                    onChange={(e) => setSettings({ ...settings, country: e.target.value })}
+                    className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition"
+                  >
+                    <option value="">Sélectionner</option>
+                    <optgroup label="Afrique de l'Ouest (FCFA - UEMOA)">
+                      <option value="BJ">Bénin</option>
+                      <option value="BF">Burkina Faso</option>
+                      <option value="CI">Côte d'Ivoire</option>
+                      <option value="GW">Guinée-Bissau</option>
+                      <option value="ML">Mali</option>
+                      <option value="NE">Niger</option>
+                      <option value="SN">Sénégal</option>
+                      <option value="TG">Togo</option>
+                    </optgroup>
+                    <optgroup label="Afrique Centrale (FCFA - CEMAC)">
+                      <option value="CM">Cameroun</option>
+                      <option value="CF">Centrafrique</option>
+                      <option value="TD">Tchad</option>
+                      <option value="CG">Congo-Brazzaville</option>
+                      <option value="GQ">Guinée Équatoriale</option>
+                      <option value="GA">Gabon</option>
+                    </optgroup>
+                    <optgroup label="Autres pays d'Afrique">
+                      <option value="CD">Congo-Kinshasa (RDC)</option>
+                      <option value="GN">Guinée</option>
+                      <option value="MA">Maroc</option>
+                      <option value="DZ">Algérie</option>
+                      <option value="TN">Tunisie</option>
+                      <option value="NG">Nigeria</option>
+                      <option value="GH">Ghana</option>
+                    </optgroup>
+                    <optgroup label="Europe">
+                      <option value="FR">France</option>
+                      <option value="BE">Belgique</option>
+                      <option value="CH">Suisse</option>
+                      <option value="LU">Luxembourg</option>
+                    </optgroup>
+                  </select>
+                </div>
               </div>
 
               <div>
