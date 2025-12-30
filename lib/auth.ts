@@ -1,4 +1,6 @@
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const isBrowser = typeof window !== "undefined";
+// Use relative URL in browser to leverage Next.js rewrites, absolute in server
+const baseUrl = isBrowser ? "" : (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000");
 
 function dispatchAuthChange() {
   if (typeof window !== "undefined") {

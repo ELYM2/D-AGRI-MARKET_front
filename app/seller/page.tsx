@@ -15,16 +15,21 @@ import jsPDF from "jspdf"
 
 export default function SellerDashboard() {
   const router = useRouter()
-  const { me: user } = useAuth()
+  const { me: user, loading: authLoading } = useAuth()
   const [stats, setStats] = useState<any>(null)
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/auth/login")
+      return
+    }
+
     if (user) {
       loadDashboard()
     }
-  }, [user])
+  }, [user, authLoading, router])
 
   const loadDashboard = async () => {
     try {
@@ -92,7 +97,7 @@ export default function SellerDashboard() {
     showToast("success", "Label Généré", "L'étiquette est prête")
   }
 
-  if (loading) {
+  if (authLoading || (user && loading)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -102,6 +107,8 @@ export default function SellerDashboard() {
       </div>
     )
   }
+
+  if (!user) return null;
 
   const statsCards = [
     { label: "Ventes ce mois", value: `${stats?.sales_this_month || 0} FCFA`, icon: TrendingUp },
