@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/use-auth"
 export default function SellerMessagesPage() {
     const { me } = useAuth()
     const [sidebarOpen, setSidebarOpen] = useState(false)
-    const [activeTab, setActiveTab] = useState<"received" | "sent">("received")
+    const [activeTab, setActiveTab] = useState<"inbox" | "sent">("inbox")
     const [messages, setMessages] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [replyBody, setReplyBody] = useState("")
@@ -45,7 +45,7 @@ export default function SellerMessagesPage() {
 
         setSelectedMessage(msg)
         // Mark as read if it's in inbox and not read
-        if (activeTab === "received" && !msg.is_read) {
+        if (activeTab === "inbox" && !msg.is_read) {
             try {
                 await markMessageAsRead(msg.id)
                 // Update local state to reflect read status
@@ -129,8 +129,8 @@ export default function SellerMessagesPage() {
                     <div className={`flex-1 overflow-y-auto p-4 border-r border-border ${selectedMessage ? 'hidden md:block' : 'block'}`}>
                         <div className="flex gap-2 mb-4">
                             <Button
-                                variant={activeTab === "received" ? "default" : "outline"}
-                                onClick={() => setActiveTab("received")}
+                                variant={activeTab === "inbox" ? "default" : "outline"}
+                                onClick={() => setActiveTab("inbox")}
                                 className="flex-1"
                             >
                                 <Inbox className="w-4 h-4 mr-2" />
@@ -156,11 +156,11 @@ export default function SellerMessagesPage() {
                                     <div
                                         key={msg.id}
                                         onClick={() => handleSelectMessage(msg)}
-                                        className={`p-4 rounded-lg border cursor-pointer transition hover:bg-muted/50 ${selectedMessage?.id === msg.id ? "bg-muted border-primary" : "bg-card border-border"} ${!msg.is_read && activeTab === 'received' ? "border-l-4 border-l-primary" : ""}`}
+                                        className={`p-4 rounded-lg border cursor-pointer transition hover:bg-muted/50 ${selectedMessage?.id === msg.id ? "bg-muted border-primary" : "bg-card border-border"} ${!msg.is_read && activeTab === 'inbox' ? "border-l-4 border-l-primary" : ""}`}
                                     >
                                         <div className="flex justify-between mb-1">
                                             <span className="font-bold text-foreground truncate">
-                                                {activeTab === 'received' ? (msg.sender_name || 'Utilisateur') : (msg.receiver_name || 'Destinataire')}
+                                                {activeTab === 'inbox' ? (msg.sender_name || 'Utilisateur') : (msg.receiver_name || 'Destinataire')}
                                             </span>
                                             <span className="text-xs text-muted-foreground whitespace-nowrap">
                                                 {new Date(msg.created_at).toLocaleDateString()}
@@ -185,7 +185,7 @@ export default function SellerMessagesPage() {
                                     <div>
                                         <h2 className="font-bold text-lg">{selectedMessage.subject}</h2>
                                         <p className="text-sm text-muted-foreground">
-                                            {activeTab === 'received' ? `De: ${selectedMessage.sender_name}` : `À: ${selectedMessage.receiver_name}`} • {new Date(selectedMessage.created_at).toLocaleString()}
+                                            {activeTab === 'inbox' ? `De: ${selectedMessage.sender_name}` : `À: ${selectedMessage.receiver_name}`} • {new Date(selectedMessage.created_at).toLocaleString()}
                                         </p>
                                     </div>
                                 </div>
@@ -194,7 +194,7 @@ export default function SellerMessagesPage() {
                                         {selectedMessage.body}
                                     </div>
 
-                                    {activeTab === 'received' && (
+                                    {activeTab === 'inbox' && (
                                         <div className="bg-card p-4 rounded-lg border border-border mt-4">
                                             <h3 className="font-medium mb-2">Répondre</h3>
                                             <form onSubmit={handleReply}>

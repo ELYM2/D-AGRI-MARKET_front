@@ -63,12 +63,12 @@ export default function SettingsPage() {
         min_order_amount: parseFloat(settings.minOrder) || 0,
         delivery_time: settings.deliveryTime,
         terms_of_sale: settings.terms,
-        mon_open: settings.monOpen || null,
-        mon_close: settings.monClose || null,
-        sat_open: settings.satOpen || null,
-        sat_close: settings.satClose || null,
-        sun_open: settings.sunOpen || null,
-        sun_close: settings.sunClose || null,
+        mon_open: settings.monOpen || undefined,
+        mon_close: settings.monClose || undefined,
+        sat_open: settings.satOpen || undefined,
+        sat_close: settings.satClose || undefined,
+        sun_open: settings.sunOpen || undefined,
+        sun_close: settings.sunClose || undefined,
         business_country: settings.country,
       })
       showToast("success", "Paramètres sauvegardés", "Vos paramètres ont été mis à jour")

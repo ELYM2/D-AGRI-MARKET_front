@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { getProduct, getCategories, updateProduct } from "@/lib/api"
+import { getProduct, getCategories, updateProductFields } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 import { Leaf } from "lucide-react"
 
@@ -42,17 +42,17 @@ export default function EditProductPage() {
     const loadData = async () => {
       try {
         setLoading(true)
-    const [product, cats] = await Promise.all([getProduct(productId), getCategories()])
-    setForm({
-      name: product.name || "",
-      description: product.description || "",
-      price: product.price?.toString() || "",
-      old_price: product.old_price?.toString() || "",
-      stock: product.stock?.toString() || "",
-      category: product.category?.toString() || "",
-      is_active: product.is_active ?? true,
-    })
-    setCategories(cats || [])
+        const [product, cats] = await Promise.all([getProduct(productId), getCategories()])
+        setForm({
+          name: product.name || "",
+          description: product.description || "",
+          price: product.price?.toString() || "",
+          old_price: product.old_price?.toString() || "",
+          stock: product.stock?.toString() || "",
+          category: product.category?.toString() || "",
+          is_active: product.is_active ?? true,
+        })
+        setCategories(cats || [])
       } catch (error: any) {
         console.error("Error loading product:", error)
         showToast("error", "Erreur", error?.message || "Impossible de charger le produit")
@@ -81,7 +81,7 @@ export default function EditProductPage() {
 
     try {
       setSaving(true)
-      await updateProduct(productId, {
+      await updateProductFields(productId, {
         name: form.name,
         description: form.description,
         price: Number(form.price),

@@ -307,8 +307,8 @@ export async function markAllNotificationsAsRead() {
 }
 
 // Delivery & Payments API
-export async function getDeliveryFee() {
-  const res = await apiCall("/api/delivery/fee/", {
+export async function getDeliveryFee(latitude: number, longitude: number) {
+  const res = await apiCall(`/api/delivery/fee/?latitude=${latitude}&longitude=${longitude}`, {
     cache: "no-store",
   });
 
@@ -414,10 +414,10 @@ export async function getSellerOrder(id: number) {
   return res.json();
 }
 
-export async function updateOrderStatus(orderId: number, status: string) {
+export async function updateOrderStatus(orderId: number, status: string, reason?: string) {
   const res = await apiCall(`/api/seller/orders/${orderId}/status/`, {
     method: "POST",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, reason }),
   });
 
   if (!res.ok) throw new Error("Failed to update order status");
@@ -447,6 +447,19 @@ export async function updateProduct(id: number, formData: FormData) {
   const res = await apiCall(`/api/products/${id}/`, {
     method: "PATCH",
     body: formData,
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(JSON.stringify(error));
+  }
+  return res.json();
+}
+
+export async function updateProductFields(id: number, data: Record<string, any>) {
+  const res = await apiCall(`/api/products/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
   });
 
   if (!res.ok) {

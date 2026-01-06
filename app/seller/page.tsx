@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { BarChart3, Package, ShoppingCart, Users, TrendingUp, Plus, Eye, Edit, Trash2, Leaf, PauseCircle, PlayCircle, Inbox, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getSellerStats, getProducts, updateProduct, deleteProduct } from "@/lib/api"
+import { getSellerStats, getProducts, updateProductFields, deleteProduct } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
@@ -51,7 +51,7 @@ export default function SellerDashboard() {
 
   const handleToggleActive = async (product: any) => {
     try {
-      const updated = await updateProduct(product.id, { is_active: !product.is_active })
+      const updated = await updateProductFields(product.id, { is_active: !product.is_active })
       setProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, ...updated } : p)))
       showToast("success", "Produit mis à jour", updated.is_active ? "Le produit est actif" : "Le produit est en pause")
     } catch (error: any) {

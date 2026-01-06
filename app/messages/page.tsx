@@ -11,7 +11,7 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMessage, setSelectedMessage] = useState<any>(null)
-  const [inbox, setInbox] = useState<"received" | "sent">("received")
+  const [inbox, setInbox] = useState<"inbox" | "sent">("inbox")
   const [replySubject, setReplySubject] = useState("")
   const [replyBody, setReplyBody] = useState("")
   const [sending, setSending] = useState(false)
@@ -41,7 +41,7 @@ export default function MessagesPage() {
     setSelectedMessage(message)
     setReplySubject(message.subject?.startsWith("Re:") ? message.subject : `Re: ${message.subject || ""}`)
     setReplyBody("")
-    if (!message.is_read && inbox === "received") {
+    if (!message.is_read && inbox === "inbox") {
       try {
         await markMessageAsRead(message.id)
         await loadMessages()
@@ -61,7 +61,7 @@ export default function MessagesPage() {
     try {
       setSending(true)
       await sendMessage({
-        receiver: inbox === "received" ? selectedMessage.sender : selectedMessage.receiver,
+        receiver: inbox === "inbox" ? selectedMessage.sender : selectedMessage.receiver,
         subject: replySubject.trim(),
         body: replyBody.trim(),
       })
@@ -104,9 +104,9 @@ export default function MessagesPage() {
             <div className="p-4 border-b border-border">
               <div className="flex gap-2">
                 <Button
-                  variant={inbox === "received" ? "default" : "outline"}
+                  variant={inbox === "inbox" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setInbox("received")}
+                  onClick={() => setInbox("inbox")}
                   className="flex-1"
                 >
                   <Inbox className="w-4 h-4 mr-2" />
@@ -140,13 +140,13 @@ export default function MessagesPage() {
                     key={message.id}
                     onClick={() => handleSelectMessage(message)}
                     className={`w-full p-4 text-left hover:bg-muted/50 transition ${selectedMessage?.id === message.id ? "bg-muted" : ""
-                      } ${!message.is_read && inbox === "received" ? "font-semibold" : ""}`}
+                      } ${!message.is_read && inbox === "inbox" ? "font-semibold" : ""}`}
                   >
                     <div className="flex items-start justify-between mb-1">
                       <p className="text-sm font-medium text-foreground truncate">
-                        {inbox === "received" ? message.sender_name : message.receiver_name}
+                        {inbox === "inbox" ? message.sender_name : message.receiver_name}
                       </p>
-                      {!message.is_read && inbox === "received" && (
+                      {!message.is_read && inbox === "inbox" && (
                         <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1"></div>
                       )}
                     </div>

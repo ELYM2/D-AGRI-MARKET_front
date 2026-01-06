@@ -172,9 +172,9 @@ export default function CheckoutPage() {
         }
         showToast("info", "Validation en cours", "Confirmez le paiement sur votre téléphone.")
         const payment = await initiateMobilePayment({
-          method: formData.paymentMethod as "momo" | "om",
+          provider: formData.paymentMethod as "momo" | "om",
           amount: total,
-          phone: formData.mobileMoneyNumber,
+          phone_number: formData.mobileMoneyNumber,
         })
         setFormData((prev) => ({ ...prev, paymentReference: payment.reference }))
       }
