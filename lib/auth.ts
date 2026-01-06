@@ -106,6 +106,7 @@ export async function getMe() {
     cache: "no-store",
     credentials: "include",
   });
+  
   if (res.status === 401) {
     // Try to refresh access token once (without dispatching auth:changed to avoid loops)
     try {
@@ -114,16 +115,25 @@ export async function getMe() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
       });
-      if (!refreshRes.ok) return null;
-      // Don't dispatch auth:changed here to avoid infinite loop
+      
+      // Si le refresh échoue (400 ou autre), on retourne null sans essayer à nouveau
+      if (!refreshRes.ok) {
+        // 400 signifie généralement qu'il n'y a pas de refresh token valide
+        // Pas besoin de retenter me/ dans ce cas
+        return null;
+      }
+      
+      // Si le refresh réussit, réessayer me/
       res = await fetch(`${baseUrl}/api/auth/me/`, {
         cache: "no-store",
         credentials: "include",
       });
     } catch {
+      // En cas d'erreur réseau ou autre, retourner null
       return null;
     }
   }
+  
   if (res.status === 401) return null;
   if (!res.ok) throw new Error("Failed to fetch profile");
   return res.json();

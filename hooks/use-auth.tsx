@@ -89,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await new Promise(resolve => setTimeout(resolve, 50))
         attempts++
       }
+      // Retourner null si on n'a pas pu obtenir le résultat à temps
       return null
     }
     
@@ -96,12 +97,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!silent) setLoading(true)
     try {
       const profile = await fetchProfile()
+      // Si le profil est null (non authentifié), c'est normal, ne pas mettre d'erreur
+      if (profile === null) {
+        setMe(null)
+        setError(null) // Pas d'erreur si juste non authentifié
+        return null
+      }
       setMe(profile)
       setError(null)
       return profile
     } catch (err) {
+      // Seulement mettre une erreur si c'est vraiment une erreur (pas un 401)
       const message = err instanceof Error ? err.message : "Impossible de récupérer le profil"
-      setError(message)
+      // Ne pas considérer les erreurs d'authentification comme des vraies erreurs
+      if (!message.includes("401") && !message.includes("Unauthorized")) {
+        setError(message)
+      } else {
+        setError(null)
+      }
       setMe(null)
       return null
     } finally {
@@ -120,26 +133,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return
     
     let debounceTimer: NodeJS.Timeout | null = null
+    let lastLoadTime = 0
     
     const handleAuthChange = () => {
       // Debounce pour éviter les appels multiples rapides
       if (debounceTimer) clearTimeout(debounceTimer)
+      
+      // Ne pas recharger si on vient de charger il y a moins de 1 seconde
+      const now = Date.now()
+      if (now - lastLoadTime < 1000) {
+        return
+      }
+      
       debounceTimer = setTimeout(() => {
         if (!isLoadingRef.current) {
+          lastLoadTime = Date.now()
           void loadProfile({ silent: true })
         }
-      }, 200)
+      }, 300) // Augmenté à 300ms pour plus de stabilité
     }
     
     const handleFocus = () => {
-      // Ne recharger que si on n'a pas encore chargé ou si ça fait plus de 5 minutes
-      if (!hasLoadedRef.current || !isLoadingRef.current) {
+      // Ne recharger que si on n'a pas encore chargé
+      if (!hasLoadedRef.current && !isLoadingRef.current) {
         handleAuthChange()
       }
     }
     
     const visibilityHandler = () => {
-      if (document.visibilityState === "visible" && !isLoadingRef.current) {
+      // Ne recharger que si la page devient visible et qu'on n'a pas encore chargé
+      if (document.visibilityState === "visible" && !hasLoadedRef.current && !isLoadingRef.current) {
         handleAuthChange()
       }
     }
@@ -160,8 +183,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (payload: LoginPayload) => {
       await apiLogin(payload)
       // apiLogin() dispatch déjà auth:changed, pas besoin de le refaire
-      // Attendre un peu pour que les cookies soient bien définis
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // Attendre un peu plus pour que les cookies soient bien définis et disponibles
+      // Les cookies HttpOnly peuvent prendre un moment pour être disponibles dans les requêtes suivantes
+      await new Promise(resolve => setTimeout(resolve, 300))
       const profile = await loadProfile({ silent: true })
       return profile
     },
