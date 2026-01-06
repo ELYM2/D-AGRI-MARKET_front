@@ -78,8 +78,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const hasLoadedRef = useRef(false)
+  const isLoadingRef = useRef(false)
 
   const loadProfile = useCallback(async ({ silent = false } = {}): Promise<Me | null> => {
+    // Éviter les appels simultanés multiples
+    if (isLoadingRef.current) {
+      // Attendre que l'appel en cours se termine (max 5 secondes)
+      let attempts = 0
+      while (isLoadingRef.current && attempts < 100) {
+        await new Promise(resolve => setTimeout(resolve, 50))
+        attempts++
+      }
+      return null
+    }
+    
+    isLoadingRef.current = true
     if (!silent) setLoading(true)
     try {
       const profile = await fetchProfile()
@@ -93,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null
     } finally {
       hasLoadedRef.current = true
+      isLoadingRef.current = false
       if (!silent) setLoading(false)
     }
   }, [])
@@ -104,22 +118,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Recharge silencieusement quand une action auth survient
   useEffect(() => {
     if (typeof window === "undefined") return
+    
+    let debounceTimer: NodeJS.Timeout | null = null
+    
     const handleAuthChange = () => {
-      void loadProfile({ silent: true })
+      // Debounce pour éviter les appels multiples rapides
+      if (debounceTimer) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => {
+        if (!isLoadingRef.current) {
+          void loadProfile({ silent: true })
+        }
+      }, 200)
     }
+    
     const handleFocus = () => {
-      handleAuthChange()
-    }
-    const visibilityHandler = () => {
-      if (document.visibilityState === "visible") {
+      // Ne recharger que si on n'a pas encore chargé ou si ça fait plus de 5 minutes
+      if (!hasLoadedRef.current || !isLoadingRef.current) {
         handleAuthChange()
       }
     }
+    
+    const visibilityHandler = () => {
+      if (document.visibilityState === "visible" && !isLoadingRef.current) {
+        handleAuthChange()
+      }
+    }
+    
     window.addEventListener("auth:changed", handleAuthChange)
     window.addEventListener("focus", handleFocus)
     document.addEventListener("visibilitychange", visibilityHandler)
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
       window.removeEventListener("auth:changed", handleAuthChange)
       window.removeEventListener("focus", handleFocus)
       document.removeEventListener("visibilitychange", visibilityHandler)
@@ -129,12 +159,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (payload: LoginPayload) => {
       await apiLogin(payload)
-      // Dispatch l'événement pour notifier les autres composants
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("auth:changed"))
-      }
+      // apiLogin() dispatch déjà auth:changed, pas besoin de le refaire
       // Attendre un peu pour que les cookies soient bien définis
-      await new Promise(resolve => setTimeout(resolve, 50))
+      await new Promise(resolve => setTimeout(resolve, 100))
       const profile = await loadProfile({ silent: true })
       return profile
     },

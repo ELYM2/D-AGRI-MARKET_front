@@ -107,9 +107,15 @@ export async function getMe() {
     credentials: "include",
   });
   if (res.status === 401) {
-    // Try to refresh access token once
+    // Try to refresh access token once (without dispatching auth:changed to avoid loops)
     try {
-      await refresh();
+      const refreshRes = await fetch(`${baseUrl}/api/auth/refresh/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!refreshRes.ok) return null;
+      // Don't dispatch auth:changed here to avoid infinite loop
       res = await fetch(`${baseUrl}/api/auth/me/`, {
         cache: "no-store",
         credentials: "include",
