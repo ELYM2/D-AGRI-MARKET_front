@@ -129,7 +129,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (payload: LoginPayload) => {
       await apiLogin(payload)
-      return loadProfile({ silent: true })
+      // Dispatch l'événement pour notifier les autres composants
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("auth:changed"))
+      }
+      // Attendre un peu pour que les cookies soient bien définis
+      await new Promise(resolve => setTimeout(resolve, 50))
+      const profile = await loadProfile({ silent: true })
+      return profile
     },
     [loadProfile],
   )

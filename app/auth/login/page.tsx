@@ -33,9 +33,14 @@ export default function LoginPage() {
     try {
       setPending(true)
       const me = await loginUser({ username: formData.username, password: formData.password })
-      showToast("success", "Connexion reussie", `Bienvenue ${me?.username ?? ""}`)
-      router.replace("/")
-      router.refresh?.()
+      if (me) {
+        showToast("success", "Connexion reussie", `Bienvenue ${me.username}`)
+        // Attendre un peu pour que le contexte se mette à jour dans tous les composants
+        await new Promise(resolve => setTimeout(resolve, 200))
+        router.push("/")
+        // Forcer un refresh pour s'assurer que la navbar se met à jour
+        router.refresh()
+      }
     } catch (err) {
       console.error(err)
       showToast("error", "Echec de connexion", "Identifiants invalides")
