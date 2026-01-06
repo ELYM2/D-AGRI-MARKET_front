@@ -13,9 +13,11 @@ console.log('');
 
 if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
   console.warn('⚠️  ATTENTION: NEXT_PUBLIC_API_BASE_URL n\'est pas définie!');
-  console.warn('   L\'application utilisera http://localhost:8000 par défaut.');
-  console.warn('   Configurez cette variable dans Render avant le build.');
-  process.exit(0); // On continue quand même le build
+  if (process.env.NODE_ENV === 'production') {
+    console.log('   ℹ️  Mode Production détecté: Utilisation du fallback https://d-agri-market-back.onrender.com');
+  } else {
+    console.warn('   L\'application utilisera http://localhost:8000 par défaut.');
+  }
 } else {
   console.log('✅ NEXT_PUBLIC_API_BASE_URL est correctement configurée:', process.env.NEXT_PUBLIC_API_BASE_URL);
 }

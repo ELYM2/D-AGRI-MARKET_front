@@ -1,5 +1,5 @@
 // API Configuration
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || (process.env.NODE_ENV === "production" ? "https://d-agri-market-back.onrender.com" : "http://localhost:8000");
 const baseUrl = API_BASE_URL;
 
 // Helper function for API calls with authentication
