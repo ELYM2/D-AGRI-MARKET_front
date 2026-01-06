@@ -6,7 +6,26 @@ function dispatchAuthChange() {
   }
 }
 
-export async function register(payload: { username: string; email?: string; password: string }) {
+export type RegisterPayload = {
+  username: string;
+  email?: string;
+  password: string;
+  first_name?: string;
+  last_name?: string;
+  is_seller?: boolean;
+  business_name?: string;
+  business_description?: string;
+  business_address?: string;
+  business_city?: string;
+  business_postal_code?: string;
+  business_country?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  postal_code?: string;
+};
+
+export async function register(payload: RegisterPayload) {
   const res = await fetch(`${baseUrl}/api/auth/register/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -129,6 +148,26 @@ export type UpdateProfilePayload = {
   first_name?: string;
   last_name?: string;
   email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  postal_code?: string;
+  is_seller?: boolean;
+  business_name?: string;
+  business_description?: string;
+  business_address?: string;
+  business_city?: string;
+  business_postal_code?: string;
+  business_country?: string;
+  min_order_amount?: number;
+  delivery_time?: string;
+  terms_of_sale?: string;
+  mon_open?: string;
+  mon_close?: string;
+  sat_open?: string;
+  sat_close?: string;
+  sun_open?: string;
+  sun_close?: string;
 };
 
 export async function updateProfile(payload: UpdateProfilePayload) {

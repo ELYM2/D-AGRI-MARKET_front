@@ -305,3 +305,162 @@ export async function markAllNotificationsAsRead() {
   if (!res.ok) throw new Error("Failed to mark all notifications as read");
   return res.json();
 }
+
+// Delivery & Payments API
+export async function getDeliveryFee() {
+  const res = await apiCall("/api/delivery/fee/", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch delivery fee");
+  return res.json();
+}
+
+export async function initiateMobilePayment(data: {
+  phone_number: string;
+  provider: string;
+  amount: number;
+}) {
+  const res = await apiCall("/api/payments/mobile/initiate/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Payment initiation failed");
+  }
+  return res.json();
+}
+
+// Favorites API
+export async function getFavorites() {
+  const res = await apiCall("/api/favorites/", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch favorites");
+  return res.json();
+}
+
+export async function toggleFavorite(productId: number) {
+  const res = await apiCall(`/api/products/${productId}/favorite/`, {
+    method: "POST",
+  });
+
+  if (!res.ok) throw new Error("Failed to toggle favorite");
+  return res.json();
+}
+
+// Reviews API
+export async function getReviews(productId: number) {
+  const res = await apiCall(`/api/products/${productId}/reviews/`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch reviews");
+  return res.json();
+}
+
+export async function createReview(data: {
+  product: number;
+  rating: number;
+  comment: string;
+}) {
+  const res = await apiCall("/api/reviews/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) throw new Error("Failed to create review");
+  return res.json();
+}
+
+// Sellers Public API
+export async function getSellers() {
+  const res = await apiCall("/api/sellers/", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch sellers");
+  return res.json();
+}
+
+export async function getSeller(id: number) {
+  const res = await apiCall(`/api/sellers/${id}/`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch seller profile");
+  return res.json();
+}
+
+// Seller Dashboard API
+export async function getSellerOrders() {
+  const res = await apiCall("/api/seller/orders/", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch seller orders");
+  return res.json();
+}
+
+export async function getSellerOrder(id: number) {
+  const res = await apiCall(`/api/seller/orders/${id}/`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch seller order");
+  return res.json();
+}
+
+export async function updateOrderStatus(orderId: number, status: string) {
+  const res = await apiCall(`/api/seller/orders/${orderId}/status/`, {
+    method: "POST",
+    body: JSON.stringify({ status }),
+  });
+
+  if (!res.ok) throw new Error("Failed to update order status");
+  return res.json();
+}
+
+export async function getSellerReviews() {
+  const res = await apiCall("/api/seller/reviews/", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch seller reviews");
+  return res.json();
+}
+
+export async function replyToReview(reviewId: number, reply: string) {
+  const res = await apiCall(`/api/seller/reviews/${reviewId}/reply/`, {
+    method: "POST",
+    body: JSON.stringify({ reply }),
+  });
+
+  if (!res.ok) throw new Error("Failed to reply to review");
+  return res.json();
+}
+
+export async function updateProduct(id: number, formData: FormData) {
+  const res = await apiCall(`/api/products/${id}/`, {
+    method: "PATCH",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(JSON.stringify(error));
+  }
+  return res.json();
+}
+
+export async function deleteProduct(id: number) {
+  const res = await apiCall(`/api/products/${id}/`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) throw new Error("Failed to delete product");
+  return true;
+}
