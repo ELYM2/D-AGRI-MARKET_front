@@ -1,20 +1,21 @@
 // API Configuration
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const baseUrl = API_BASE_URL;
 
 // Helper function for API calls with authentication
 async function apiCall(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${baseUrl}${endpoint}`;
 
-  const headers: HeadersInit = {
-    ...options.headers,
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> || {}),
   };
 
   // Only add Content-Type if body is not FormData
   if (!(options.body instanceof FormData)) {
-    (headers as Record<string, string>)["Content-Type"] = "application/json";
+    headers["Content-Type"] = "application/json";
   }
 
   const defaultOptions: RequestInit = {
@@ -55,8 +56,9 @@ export async function getProducts(params?: {
   price_min?: number;
   price_max?: number;
   ordering?: string;
-  owner?: number;
   is_active?: boolean;
+  owner?: number;
+  stock?: number;
 }) {
   const queryParams = new URLSearchParams();
   if (params) {
@@ -165,36 +167,6 @@ export async function getCart() {
   return Array.isArray(data) ? data[0] : data;
 }
 
-
-
-export async function getFavorites() {
-  const res = await apiCall("/api/favorites/", {
-    cache: "no-store",
-  });
-
-  if (!res.ok) throw new Error("Failed to fetch favorites");
-  return res.json();
-}
-
-export async function toggleFavorite(productId: number) {
-  const res = await apiCall("/api/favorites/toggle/", {
-    method: "POST",
-    body: JSON.stringify({ product_id: productId }),
-  });
-
-  if (!res.ok) {
-    let message = "Failed to toggle favorite";
-    try {
-      const error = await res.json();
-      message = error.error || error.detail || message;
-    } catch {
-      // keep default message
-    }
-    throw new Error(message);
-  }
-  return res.json();
-}
-
 export async function addToCart(productId: number, quantity: number = 1) {
   const res = await apiCall("/api/cart/add_item/", {
     method: "POST",
@@ -250,63 +222,6 @@ export async function getOrders() {
   return res.json();
 }
 
-export async function getOrder(id: number) {
-  const res = await apiCall(`/api/orders/${id}/`, {
-    cache: "no-store",
-  })
-
-  if (!res.ok) {
-    const message = res.status === 404 ? "Commande introuvable" : "Failed to fetch order"
-    throw new Error(message)
-  }
-  return res.json()
-}
-
-export async function getSellerOrders() {
-  const res = await apiCall("/api/seller-orders/", {
-    cache: "no-store",
-  })
-
-  if (!res.ok) throw new Error("Failed to fetch seller orders")
-  return res.json()
-}
-
-export async function getSellerOrder(id: number) {
-  const res = await apiCall(`/api/seller-orders/${id}/`, {
-    cache: "no-store",
-  })
-
-  if (!res.ok) {
-    const message = res.status === 404 ? "Commande introuvable" : "Failed to fetch order"
-    throw new Error(message)
-  }
-  return res.json()
-}
-
-export async function updateOrderStatus(
-  id: number,
-  status: "pending" | "processing" | "delivered" | "cancelled",
-  reason?: string
-) {
-  const res = await apiCall(`/api/seller-orders/${id}/update_status/`, {
-    method: "POST",
-    body: JSON.stringify({ status, ...(reason ? { reason } : {}) }),
-  })
-
-  if (!res.ok) {
-    let message = "Impossible de mettre à jour le statut"
-    try {
-      const error = await res.json()
-      message = error.error || error.detail || message
-    } catch {
-      // keep default
-    }
-    throw new Error(message)
-  }
-  return res.json()
-}
-
-
 export async function createOrder(data: {
   shipping_address: string;
   shipping_city: string;
@@ -324,150 +239,19 @@ export async function createOrder(data: {
   return res.json();
 }
 
-// Payments (simulated for MoMo / OM)
-export async function initiateMobilePayment(payload: { method: "momo" | "om"; amount: number; phone: string }) {
-  const res = await apiCall("/api/payments/mobile/", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
-
-  if (!res.ok) {
-    let message = "Échec du paiement mobile"
-    try {
-      const error = await res.json()
-      message = error.detail || error.error || message
-    } catch {
-      // keep default
-    }
-    throw new Error(message)
-  }
-  return res.json()
-}
-
-// Seller product management
-export async function updateProduct(
-  id: number,
-  data: Partial<{
-    name: string
-    description: string
-    price: number
-    old_price: number
-    stock: number
-    category: number
-    is_active: boolean
-  }>
-) {
-  const res = await apiCall(`/api/products/${id}/`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  })
-
-  if (!res.ok) {
-    let message = "Failed to update product"
-    try {
-      const error = await res.json()
-      message = error.detail || error.error || message
-    } catch {
-      // keep default message
-    }
-    throw new Error(message)
-  }
-  return res.json()
-}
-
-export async function deleteProduct(id: number) {
-  const res = await apiCall(`/api/products/${id}/`, {
-    method: "DELETE",
-  })
-
-  if (!res.ok) {
-    let message = "Failed to delete product"
-    try {
-      const error = await res.json()
-      message = error.detail || error.error || message
-    } catch {
-      // keep default message
-    }
-    throw new Error(message)
-  }
-  return true
-}
-
 // Seller API
 export async function getSellerStats() {
-  const res = await apiCall("/api/seller-stats/", {
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error("Échec du chargement des statistiques vendeur");
-  return res.json();
-}
-
-export async function getSellers() {
-  const res = await apiCall("/api/auth/sellers/", {
+  const res = await apiCall("/api/seller/stats/", {
     cache: "no-store",
   });
 
-  if (!res.ok) throw new Error("Failed to fetch sellers");
+  if (!res.ok) throw new Error("Failed to fetch seller stats");
   return res.json();
-}
-
-export async function getSeller(id: number) {
-  const res = await apiCall(`/api/auth/sellers/${id}/`, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) throw new Error("Failed to fetch seller");
-  return res.json();
-}
-
-// Reviews API
-export async function createReview(data: { product: number; rating: number; comment: string }) {
-  const res = await apiCall("/api/reviews/", {
-    method: "POST",
-    body: JSON.stringify(data),
-  })
-
-  if (!res.ok) {
-    let message = "Impossible d'ajouter l'avis"
-    try {
-      const error = await res.json()
-      message = error.detail || error.error || message
-    } catch {
-      // keep default
-    }
-    throw new Error(message)
-  }
-  return res.json()
-}
-
-export async function getReviews(productId: number) {
-  const res = await apiCall(`/api/reviews/?product=${productId}`, {
-    cache: "no-store",
-  })
-  if (!res.ok) throw new Error("Failed to fetch reviews")
-  return res.json()
-}
-
-export async function getSellerReviews() {
-  const res = await apiCall("/api/reviews/?mode=seller", {
-    cache: "no-store",
-  })
-  if (!res.ok) throw new Error("Failed to fetch seller reviews")
-  return res.json()
-}
-
-export async function replyToReview(reviewId: number, response: string) {
-  const res = await apiCall(`/api/reviews/${reviewId}/respond/`, {
-    method: "POST",
-    body: JSON.stringify({ response }),
-  })
-  if (!res.ok) throw new Error("Failed to reply to review")
-  return res.json()
 }
 
 // Messages API
-export async function getMessages(box: "inbox" | "sent" | "received" = "inbox") {
-  const res = await apiCall(`/api/messages/?inbox=${box}`, {
+export async function getMessages(box: "inbox" | "sent" = "inbox") {
+  const res = await apiCall(`/api/messages/?box=${box}`, {
     cache: "no-store",
   });
 
@@ -519,14 +303,5 @@ export async function markAllNotificationsAsRead() {
   });
 
   if (!res.ok) throw new Error("Failed to mark all notifications as read");
-  return res.json();
-}
-
-// Cart & Delivery
-export async function getDeliveryFee(latitude: number, longitude: number) {
-  const res = await apiCall(`/api/cart/calculate_delivery_fee/?latitude=${latitude}&longitude=${longitude}`, {
-    method: "POST",
-  });
-  if (!res.ok) throw new Error("Impossible de calculer les frais de livraison");
   return res.json();
 }
