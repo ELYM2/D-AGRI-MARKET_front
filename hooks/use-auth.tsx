@@ -183,10 +183,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (payload: LoginPayload) => {
       await apiLogin(payload)
       // apiLogin() dispatch déjà auth:changed, pas besoin de le refaire
-      // Attendre un peu plus pour que les cookies soient bien définis et disponibles
-      // Les cookies HttpOnly peuvent prendre un moment pour être disponibles dans les requêtes suivantes
-      await new Promise(resolve => setTimeout(resolve, 300))
-      const profile = await loadProfile({ silent: true })
+      
+      // En production, les cookies cross-domain peuvent prendre plus de temps
+      // Attendre que les cookies soient disponibles avant de charger le profil
+      // On fait plusieurs tentatives avec délai croissant
+      let profile: Me | null = null
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 500 + attempt * 500))
+        profile = await loadProfile({ silent: true })
+        if (profile) break
+      }
+      
       return profile
     },
     [loadProfile],

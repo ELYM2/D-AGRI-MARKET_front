@@ -84,6 +84,11 @@ export async function login(payload: { username: string; password: string }) {
     throw new Error(errorMessage);
   }
   const data = await res.json();
+  
+  // En production cross-domain, les cookies peuvent prendre du temps
+  // Attendre un peu avant de dispatcher pour laisser les cookies se définir
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
   dispatchAuthChange();
   return data;
 }
