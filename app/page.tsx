@@ -117,7 +117,7 @@ export default function Home() {
                             {/* Floating Hero Image - Right */}
                             <div className="relative w-full aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 animate-float">
                                 <img
-                                    src="/fresh-vegetables-and-local-produce-market.jpg"
+                                    src="/hero-profil.jpeg"
                                     alt="Marché D-Agri"
                                     className="w-full h-full object-cover scale-105 hover:scale-110 transition-transform duration-700"
                                 />
