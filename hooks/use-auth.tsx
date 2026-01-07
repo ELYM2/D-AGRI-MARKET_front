@@ -183,25 +183,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (payload: LoginPayload) => {
       console.log("useAuth: Starting login...")
       await apiLogin(payload)
-      console.log("useAuth: Login success, waiting for cookies...")
-      // apiLogin() dispatch déjà auth:changed, pas besoin de le refaire
 
-      // En production, les cookies cross-domain peuvent prendre plus de temps
-      // Attendre que les cookies soient disponibles avant de charger le profil
-      // On fait plusieurs tentatives avec délai croissant
-      let profile: Me | null = null
-      for (let attempt = 0; attempt < 3; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, 500 + attempt * 500))
-        console.log(`useAuth: Attempting to load profile (attempt ${attempt + 1})...`)
-        profile = await loadProfile({ silent: true })
-        if (profile) {
-          console.log("useAuth: Profile loaded successfully", profile)
-          break
-        }
-      }
+      // Token-based auth est synchrone (localStorage), donc on peut charger le profil tout de suite
+      console.log("useAuth: Login success, loading profile...")
+      const profile = await loadProfile({ silent: true })
 
-      if (!profile) {
-        console.warn("useAuth: Failed to load profile after login attempts")
+      if (profile) {
+        console.log("useAuth: Profile loaded successfully", profile)
+      } else {
+        console.warn("useAuth: Failed to load profile after login")
       }
       return profile
     },

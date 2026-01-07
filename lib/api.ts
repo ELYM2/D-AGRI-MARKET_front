@@ -3,6 +3,34 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || (process.env
 const baseUrl = API_BASE_URL;
 
 // Helper function for API calls with authentication
+export const setTokens = (access: string, refresh: string) => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("access_token", access)
+    localStorage.setItem("refresh_token", refresh)
+  }
+}
+
+export const getAccessToken = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("access_token")
+  }
+  return null
+}
+
+export const getRefreshToken = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("refresh_token")
+  }
+  return null
+}
+
+export const clearTokens = () => {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("access_token")
+    localStorage.removeItem("refresh_token")
+  }
+}
+
 async function apiCall(
   endpoint: string,
   options: RequestInit = {}
@@ -18,9 +46,15 @@ async function apiCall(
     headers["Content-Type"] = "application/json";
   }
 
+  // Add Authorization header if token exists
+  const token = getAccessToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const defaultOptions: RequestInit = {
     headers,
-    credentials: "include", // Important for JWT cookies
+    // credentials: "include", // Removed since we use headers now
     ...options,
   };
 
