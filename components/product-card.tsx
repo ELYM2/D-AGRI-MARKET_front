@@ -11,15 +11,19 @@ interface ProductCardProps {
     onAddToCart?: (e: React.MouseEvent) => void
 }
 
-import { addToCart } from "@/lib/api"
+import { addToCart, toggleFavorite } from "@/lib/api"
 import { showToast } from "@/components/toast-notification"
 import { useAuth } from "@/hooks/use-auth"
+import { useState } from "react"
 
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
     const { me: user } = useAuth()
     const imageUrl = product.images && product.images.length > 0
         ? resolveMediaUrl(product.images[0].image) || "/fresh-vegetables-and-local-produce-market.jpg"
         : "/fresh-vegetables-and-local-produce-market.jpg"
+
+    const [isFavorite, setIsFavorite] = useState(product.is_favorite || false)
+    const [loadingFav, setLoadingFav] = useState(false)
 
     const handleAddToCart = async (e: React.MouseEvent) => {
         e.preventDefault()
@@ -40,6 +44,25 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
         } catch (error) {
             console.error("Error adding to cart:", error)
             showToast("error", "Erreur", "Impossible d'ajouter au panier")
+        }
+    }
+
+    const handleToggleFavorite = async (e: React.MouseEvent) => {
+        e.preventDefault()
+        if (!user) {
+            showToast("error", "Connexion requise", "Veuillez vous connecter pour ajouter aux favoris")
+            return
+        }
+
+        try {
+            setLoadingFav(true)
+            const res = await toggleFavorite(product.id)
+            setIsFavorite(res.is_favorite)
+            showToast("success", "Favoris", res.is_favorite ? "Ajouté aux favoris" : "Retiré des favoris")
+        } catch (error) {
+            showToast("error", "Erreur", "Impossible de modifier les favoris")
+        } finally {
+            setLoadingFav(false)
         }
     }
 
@@ -71,8 +94,14 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
                     {/* Quick Actions */}
                     <div className="absolute top-4 right-4 flex flex-col gap-2 translate-x-12 group-hover:translate-x-0 transition-transform duration-500 delay-75">
-                        <Button size="icon" variant="secondary" className="rounded-full shadow-lg hover:scale-110 transition-transform">
-                            <Heart className="w-4 h-4" />
+                        <Button
+                            size="icon"
+                            variant="secondary"
+                            className="rounded-full shadow-lg hover:scale-110 transition-transform"
+                            onClick={handleToggleFavorite}
+                            disabled={loadingFav}
+                        >
+                            <Heart className={`w-4 h-4 ${isFavorite ? "fill-primary text-primary" : ""}`} />
                         </Button>
                     </div>
                 </div>
