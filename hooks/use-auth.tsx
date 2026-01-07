@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Retourner null si on n'a pas pu obtenir le résultat à temps
       return null
     }
-    
+
     isLoadingRef.current = true
     if (!silent) setLoading(true)
     try {
@@ -131,20 +131,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Recharge silencieusement quand une action auth survient
   useEffect(() => {
     if (typeof window === "undefined") return
-    
+
     let debounceTimer: NodeJS.Timeout | null = null
     let lastLoadTime = 0
-    
+
     const handleAuthChange = () => {
       // Debounce pour éviter les appels multiples rapides
       if (debounceTimer) clearTimeout(debounceTimer)
-      
+
       // Ne pas recharger si on vient de charger il y a moins de 1 seconde
       const now = Date.now()
       if (now - lastLoadTime < 1000) {
         return
       }
-      
+
       debounceTimer = setTimeout(() => {
         if (!isLoadingRef.current) {
           lastLoadTime = Date.now()
@@ -152,21 +152,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }, 300) // Augmenté à 300ms pour plus de stabilité
     }
-    
+
     const handleFocus = () => {
       // Ne recharger que si on n'a pas encore chargé
       if (!hasLoadedRef.current && !isLoadingRef.current) {
         handleAuthChange()
       }
     }
-    
+
     const visibilityHandler = () => {
       // Ne recharger que si la page devient visible et qu'on n'a pas encore chargé
       if (document.visibilityState === "visible" && !hasLoadedRef.current && !isLoadingRef.current) {
         handleAuthChange()
       }
     }
-    
+
     window.addEventListener("auth:changed", handleAuthChange)
     window.addEventListener("focus", handleFocus)
     document.addEventListener("visibilitychange", visibilityHandler)
@@ -181,19 +181,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (payload: LoginPayload) => {
+      console.log("useAuth: Starting login...")
       await apiLogin(payload)
+      console.log("useAuth: Login success, waiting for cookies...")
       // apiLogin() dispatch déjà auth:changed, pas besoin de le refaire
-      
+
       // En production, les cookies cross-domain peuvent prendre plus de temps
       // Attendre que les cookies soient disponibles avant de charger le profil
       // On fait plusieurs tentatives avec délai croissant
       let profile: Me | null = null
       for (let attempt = 0; attempt < 3; attempt++) {
         await new Promise(resolve => setTimeout(resolve, 500 + attempt * 500))
+        console.log(`useAuth: Attempting to load profile (attempt ${attempt + 1})...`)
         profile = await loadProfile({ silent: true })
-        if (profile) break
+        if (profile) {
+          console.log("useAuth: Profile loaded successfully", profile)
+          break
+        }
       }
-      
+
+      if (!profile) {
+        console.warn("useAuth: Failed to load profile after login attempts")
+      }
       return profile
     },
     [loadProfile],

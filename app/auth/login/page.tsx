@@ -40,6 +40,10 @@ export default function LoginPage() {
         router.push("/")
         // Forcer un refresh pour s'assurer que la navbar se met à jour
         router.refresh()
+      } else {
+        console.error("Login successful but failed to load profile")
+        showToast("error", "Erreur de chargement", "Impossible de récupérer le profil utilisateur")
+        // No need to setPending(false) here because it's handled in finally block
       }
     } catch (err) {
       console.error(err)
