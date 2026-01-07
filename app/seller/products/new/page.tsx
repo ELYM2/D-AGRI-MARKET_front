@@ -3,16 +3,32 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Upload, Loader2 } from "lucide-react"
+import { ArrowLeft, Upload, Loader2, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { showToast } from "@/components/toast-notification"
-import { createProduct, getCategories } from "@/lib/api"
+import { createProduct, getCategories, createCategory } from "@/lib/api"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 export default function CreateProductPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<any[]>([])
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+
+  // Modal state
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState("")
+  const [creatingCategory, setCreatingCategory] = useState(false)
 
   const [formData, setFormData] = useState({
     name: "",
@@ -35,6 +51,25 @@ export default function CreateProductPage() {
       setCategories(data.results || data)
     } catch (error) {
       console.error("Error loading categories:", error)
+    }
+  }
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) return
+
+    setCreatingCategory(true)
+    try {
+      const newCategory = await createCategory(newCategoryName)
+      setCategories(prev => [...prev, newCategory])
+      setFormData(prev => ({ ...prev, category: newCategory.id }))
+      showToast("success", "Catégorie créée", `La catégorie "${newCategoryName}" a été ajoutée`)
+      setNewCategoryName("")
+      setIsCategoryModalOpen(false)
+    } catch (error) {
+      console.error("Error creating category:", error)
+      showToast("error", "Erreur", "Impossible de créer la catégorie")
+    } finally {
+      setCreatingCategory(false)
     }
   }
 
@@ -226,6 +261,49 @@ export default function CreateProductPage() {
                     </option>
                   ))}
                 </select>
+
+                <Dialog open={isCategoryModalOpen} onOpenChange={setIsCategoryModalOpen}>
+                  <DialogTrigger asChild>
+                    <button
+                      type="button"
+                      className="mt-2 text-sm text-primary hover:text-primary/80 font-medium flex items-center"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Créer une catégorie
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px] bg-card text-foreground border-border">
+                    <DialogHeader>
+                      <DialogTitle>Nouvelle catégorie</DialogTitle>
+                      <DialogDescription>
+                        Ajoutez une nouvelle catégorie pour classer vos produits.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="category-name" className="text-right">
+                          Nom
+                        </Label>
+                        <Input
+                          id="category-name"
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                          className="col-span-3"
+                          placeholder="Ex: Miel local"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsCategoryModalOpen(false)} disabled={creatingCategory}>
+                        Annuler
+                      </Button>
+                      <Button onClick={handleCreateCategory} disabled={!newCategoryName.trim() || creatingCategory}>
+                        {creatingCategory && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Créer
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               <div className="flex items-center space-x-2 pt-8">

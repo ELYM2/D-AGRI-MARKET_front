@@ -227,12 +227,37 @@ export type UpdateProfilePayload = {
 };
 
 export async function updateProfile(payload: UpdateProfilePayload) {
+  const { getAccessToken } = await import('./api');
+  const token = getAccessToken();
+
   const res = await fetch(`${baseUrl}/api/auth/me/`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    },
     body: JSON.stringify(payload),
-    credentials: "include",
+    // credentials: "include",
   });
-  if (!res.ok) throw new Error("Profile update failed");
+  if (!res.ok) {
+    let errorMessage = "Profile update failed";
+    try {
+      const errorData = await res.json();
+      if (errorData && typeof errorData === "object") {
+        const errors = Object.entries(errorData)
+          .map(([field, messages]) => {
+            const msgArray = Array.isArray(messages) ? messages : [messages];
+            return `${field}: ${msgArray.join(", ")}`;
+          })
+          .join("; ");
+        errorMessage = errors || errorMessage;
+      } else if (errorData.detail) {
+        errorMessage = errorData.detail;
+      }
+    } catch {
+      errorMessage = `Profile update failed: ${res.status} ${res.statusText}`;
+    }
+    throw new Error(errorMessage);
+  }
   return res.json();
 }

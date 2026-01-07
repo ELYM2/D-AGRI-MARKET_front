@@ -84,7 +84,7 @@ export default function SellerSignupPage() {
       if (!formData.postalCode) newErrors.postalCode = "Le code postal est requis"
       if (!formData.country) newErrors.country = "Le pays est requis"
     } else if (step === 4) {
-      if (formData.password.length < 8) newErrors.password = "Au moins 8 caractères"
+      if (!me && formData.password.length < 8) newErrors.password = "Au moins 8 caractères"
       if (!formData.agreeTerms) newErrors.agreeTerms = "Vous devez accepter les conditions"
     }
 
@@ -151,6 +151,8 @@ export default function SellerSignupPage() {
       } finally {
         setLoading(false)
       }
+    } else {
+      showToast("warning", "Attention", "Veuillez corriger les erreurs dans le formulaire")
     }
   }
 

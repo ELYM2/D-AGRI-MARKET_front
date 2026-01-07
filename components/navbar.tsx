@@ -36,7 +36,11 @@ export default function Navbar() {
                             Favoris
                         </Link>
                     )}
-                    {me && !me.is_seller && (
+                    {me && me.is_seller ? (
+                        <Link href="/seller" className="text-sm font-medium text-primary hover:text-primary/80 transition">
+                            Tableau de bord
+                        </Link>
+                    ) : me && (
                         <Link href="/auth/seller-signup" className="text-sm font-medium text-primary hover:text-primary/80 transition">
                             Devenir Vendeur
                         </Link>

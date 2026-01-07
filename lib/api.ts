@@ -177,6 +177,26 @@ export async function getCategories() {
   return res.json();
 }
 
+export async function createCategory(name: string) {
+  const res = await apiCall("/api/categories/", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = "Échec de la création de la catégorie";
+    try {
+      const errorData = JSON.parse(errorText);
+      errorMessage = errorData.detail || errorData.message || errorMessage;
+    } catch {
+      // Use default error message
+    }
+    throw new Error(errorMessage);
+  }
+  return res.json();
+}
+
 // Cart API
 export async function getCart() {
   const res = await apiCall("/api/cart/", {
