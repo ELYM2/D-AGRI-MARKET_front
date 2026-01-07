@@ -366,7 +366,7 @@ export async function markAllNotificationsAsRead() {
 
 // Delivery & Payments API
 export async function getDeliveryFee(latitude: number, longitude: number) {
-  const res = await apiCall(`/api/delivery/fee/?latitude=${latitude}&longitude=${longitude}`, {
+  const res = await apiCall(`/api/cart/calculate_delivery_fee/?latitude=${latitude}&longitude=${longitude}`, {
     cache: "no-store",
   });
 
@@ -402,8 +402,9 @@ export async function getFavorites() {
 }
 
 export async function toggleFavorite(productId: number) {
-  const res = await apiCall(`/api/products/${productId}/favorite/`, {
+  const res = await apiCall("/api/favorites/toggle/", {
     method: "POST",
+    body: JSON.stringify({ product_id: productId }),
   });
 
   if (!res.ok) throw new Error("Failed to toggle favorite");
@@ -494,7 +495,7 @@ export async function getSellerReviews() {
 export async function replyToReview(reviewId: number, reply: string) {
   const res = await apiCall(`/api/reviews/${reviewId}/respond/`, {
     method: "POST",
-    body: JSON.stringify({ reply }),
+    body: JSON.stringify({ response: reply }),
   });
 
   if (!res.ok) throw new Error("Failed to reply to review");
