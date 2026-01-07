@@ -379,9 +379,13 @@ export async function initiateMobilePayment(data: {
   provider: string;
   amount: number;
 }) {
-  const res = await apiCall("/api/payments/mobile/initiate/", {
+  const res = await apiCall("/api/payments/mobile/", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      ...data,
+      phone: data.phone_number,
+      method: data.provider.toLowerCase().includes("orange") ? "om" : "momo",
+    }),
   });
 
   if (!res.ok) {
