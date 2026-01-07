@@ -451,7 +451,7 @@ export async function getSeller(id: number) {
 
 // Seller Dashboard API
 export async function getSellerOrders() {
-  const res = await apiCall("/api/seller/orders/", {
+  const res = await apiCall("/api/seller-orders/", {
     cache: "no-store",
   });
 
@@ -460,7 +460,7 @@ export async function getSellerOrders() {
 }
 
 export async function getSellerOrder(id: number) {
-  const res = await apiCall(`/api/seller/orders/${id}/`, {
+  const res = await apiCall(`/api/seller-orders/${id}/`, {
     cache: "no-store",
   });
 
@@ -469,7 +469,7 @@ export async function getSellerOrder(id: number) {
 }
 
 export async function updateOrderStatus(orderId: number, status: string, reason?: string) {
-  const res = await apiCall(`/api/seller/orders/${orderId}/status/`, {
+  const res = await apiCall(`/api/seller-orders/${orderId}/update_status/`, {
     method: "POST",
     body: JSON.stringify({ status, reason }),
   });
@@ -479,7 +479,7 @@ export async function updateOrderStatus(orderId: number, status: string, reason?
 }
 
 export async function getSellerReviews() {
-  const res = await apiCall("/api/seller/reviews/", {
+  const res = await apiCall("/api/reviews/?mode=seller", {
     cache: "no-store",
   });
 
@@ -488,7 +488,7 @@ export async function getSellerReviews() {
 }
 
 export async function replyToReview(reviewId: number, reply: string) {
-  const res = await apiCall(`/api/seller/reviews/${reviewId}/reply/`, {
+  const res = await apiCall(`/api/reviews/${reviewId}/respond/`, {
     method: "POST",
     body: JSON.stringify({ reply }),
   });

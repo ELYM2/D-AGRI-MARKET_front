@@ -11,10 +11,37 @@ interface ProductCardProps {
     onAddToCart?: (e: React.MouseEvent) => void
 }
 
+import { addToCart } from "@/lib/api"
+import { showToast } from "@/components/toast-notification"
+import { useAuth } from "@/hooks/use-auth"
+
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+    const { me: user } = useAuth()
     const imageUrl = product.images && product.images.length > 0
         ? resolveMediaUrl(product.images[0].image) || "/fresh-vegetables-and-local-produce-market.jpg"
         : "/fresh-vegetables-and-local-produce-market.jpg"
+
+    const handleAddToCart = async (e: React.MouseEvent) => {
+        e.preventDefault()
+
+        if (onAddToCart) {
+            onAddToCart(e)
+            return
+        }
+
+        if (!user) {
+            showToast("error", "Connexion requise", "Veuillez vous connecter pour ajouter au panier")
+            return
+        }
+
+        try {
+            await addToCart(product.id, 1)
+            showToast("success", "Ajouté au panier", `${product.name} a été ajouté à votre panier`)
+        } catch (error) {
+            console.error("Error adding to cart:", error)
+            showToast("error", "Erreur", "Impossible d'ajouter au panier")
+        }
+    }
 
     return (
         <motion.div
@@ -80,10 +107,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
                         </div>
 
                         <Button
-                            onClick={(e) => {
-                                e.preventDefault()
-                                onAddToCart?.(e)
-                            }}
+                            onClick={handleAddToCart}
                             className="rounded-2xl h-12 w-12 p-0 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 hover:scale-110 transition-all"
                         >
                             <ShoppingCart className="w-5 h-5" />
