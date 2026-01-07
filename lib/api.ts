@@ -218,6 +218,10 @@ export async function getCart() {
     throw new Error(errorMessage);
   }
   const data = await res.json();
+  // Handle case where it might be paginated or an array
+  if (data.results && Array.isArray(data.results)) {
+    return data.results[0];
+  }
   return Array.isArray(data) ? data[0] : data;
 }
 
