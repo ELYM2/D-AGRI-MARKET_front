@@ -19,6 +19,16 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+const UNIT_CHOICES = [
+  { value: 'kg', label: 'Kilogramme (kg)' },
+  { value: 'g', label: 'Gramme (g)' },
+  { value: 'piece', label: 'Pièce' },
+  { value: 'liter', label: 'Litre (L)' },
+  { value: 'bunch', label: 'Botte' },
+  { value: 'bag', label: 'Sac' },
+  { value: 'box', label: 'Boîte' },
+]
+
 export default function CreateProductPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -36,6 +46,7 @@ export default function CreateProductPage() {
     price: "",
     old_price: "",
     stock: "",
+    unit: "piece",
     category: "",
     fresh: true,
     image: null as File | null
@@ -107,6 +118,7 @@ export default function CreateProductPage() {
       data.append("price", formData.price)
       if (formData.old_price) data.append("old_price", formData.old_price)
       data.append("stock", formData.stock)
+      data.append("unit", formData.unit)
       if (formData.category) data.append("category", formData.category)
       data.append("fresh", formData.fresh.toString())
       data.append("is_active", "true")
@@ -232,7 +244,7 @@ export default function CreateProductPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Stock *</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Quantité en stock</label>
                 <input
                   type="number"
                   name="stock"
@@ -241,8 +253,24 @@ export default function CreateProductPage() {
                   required
                   min="0"
                   className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition"
-                  placeholder="0"
+                  placeholder="Ex: 50"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Unité de vente</label>
+                <select
+                  name="unit"
+                  value={formData.unit}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 bg-input border border-border rounded-lg outline-none text-foreground focus:border-primary transition"
+                >
+                  {UNIT_CHOICES.map((unit) => (
+                    <option key={unit.value} value={unit.value}>
+                      {unit.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

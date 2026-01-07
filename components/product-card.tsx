@@ -68,13 +68,13 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
                     </div>
 
                     <div className="flex items-center justify-between mt-auto">
-                        <div>
+                        <div className="flex flex-col">
                             <p className="text-2xl font-black text-primary">
-                                {product.price} <span className="text-sm font-bold">FCFA{product.unit ? ` / ${product.unit}` : ""}</span>
+                                {product.price.toLocaleString()} <span className="text-sm font-bold">FCFA{product.unit && product.unit !== 'piece' ? ` / ${product.unit}` : ""}</span>
                             </p>
                             {product.old_price && (
                                 <p className="text-sm text-muted-foreground line-through">
-                                    {product.old_price} FCFA
+                                    {product.old_price.toLocaleString()} FCFA
                                 </p>
                             )}
                         </div>
