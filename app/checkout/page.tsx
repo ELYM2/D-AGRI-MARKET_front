@@ -154,10 +154,10 @@ export default function CheckoutPage() {
   const handleShippingSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (shippingFee === null) {
-      showToast("warning", "Livraison", "Veuillez détecter votre position pour calculer les frais de livraison.")
-      return
+      showToast("info", "Livraison", "Vous pouvez continuer sans estimation, les frais seront de 0 par défaut.")
+    } else {
+      showToast("success", "Adresse confirmée", "Votre adresse de livraison a été enregistrée")
     }
-    showToast("success", "Adresse confirmée", "Votre adresse de livraison a été enregistrée")
     setStep("payment")
   }
 
